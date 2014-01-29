@@ -24,7 +24,8 @@ class LoggerMessagePasser extends MessagePasser{
 	public LoggerMessagePasser(String configuration_filename, String local_name) throws IOException {
 		super(configuration_filename, local_name);
 	}
-	
+	ClockType clockType = null;
+	boolean clockSet = false;
 	
 }
 public class MessagePasser {
@@ -67,7 +68,7 @@ public class MessagePasser {
 		}
 		int portNumber = nodeMap.get(local_name).port;
 		serverSocket = new ServerSocket(portNumber);
-		Thread listenerThread = new ListenerThread(serverSocket, this);
+		Thread listenerThread = new ListenerThread(this);
 		listenerThread.start();
 	}
 	

@@ -18,7 +18,7 @@ public class Application {
 			System.out.println("Enter the command you want to execute: send or receive");
 			String command = in.readLine();
 			String dest, kind, sendingMessage;	
-			switch(command){
+			switch(command.toLowerCase()){
 				case "send":
 					System.out.println(usage);
 					String[] input = in.readLine().split("/");
