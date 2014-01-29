@@ -16,7 +16,7 @@ public class ListenerThread extends Thread{
 		while(true){
 			try {
 				Socket client = serverSocket.accept();
-				System.out.println("accepted: " + client.toString());
+				System.out.println("INFO: " + "accepted: " + client.toString());
 				Thread readInputStreamThread = new ReadInputStream(client, messagePasser);
 				readInputStreamThread.start();
 			} catch (SocketException e){
@@ -39,11 +39,11 @@ class LoggerListenerThread extends Thread{
 		this.loggerMessagePasser = loggerMessagePasser;
 	}
 	public void run(){
-		System.out.println("logger listener thread!");
+		System.out.println("INFO: " + "logger listener thread!");
 		while(true){
 			try {
 				Socket client = serverSocket.accept();
-				System.out.println("logger accepted: " + client.toString());
+				System.out.println("INFO: " + "logger accepted: " + client.toString());
 				Thread loggerReadInputStream = new LoggerReadInputStream(client, loggerMessagePasser);
 				loggerReadInputStream.start();
 			} catch (SocketException e){

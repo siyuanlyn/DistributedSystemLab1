@@ -24,12 +24,12 @@ public class ReadInputStream extends Thread{
 				//if the message is set clock from logger, set the clock and don't enqueue it
 				if(receivedMessage.kind.equals("set_clock") && receivedMessage.source.equals("logger")){
 					messagePasser.clockType = ((TimeStampedMessage)receivedMessage).getClockType();
-					System.out.println("clock type set as " + messagePasser.clockType);
+					System.out.println("INFO: " + "clock type set as " + messagePasser.clockType);
 					continue;
 				}
 				if(!messagePasser.streamMap.containsKey(receivedMessage.source)){
 					//add the stream in the stream map
-					System.out.println("call back");
+					System.out.println("INFO: " + "call back");
 					Node callBackNode = messagePasser.nodeMap.get(receivedMessage.source);
 					Socket callBackSocket = new Socket(InetAddress.getByName(callBackNode.ip), callBackNode.port); 
 					ObjectOutputStream oos = new ObjectOutputStream(callBackSocket.getOutputStream());
@@ -64,9 +64,9 @@ class LoggerReadInputStream extends Thread{
 		while(true){
 			try {
 				TimeStampedMessage receivedTimeStampedMessage = (TimeStampedMessage)ois.readObject();
-				System.out.println("logger gets a timestamped message!");
+				System.out.println("INFO: " + "logger gets a timestamped message!");
 				if(!loggerMessagePasser.streamMap.containsKey(receivedTimeStampedMessage.source)){
-					System.out.println("logger call back");
+					System.out.println("INFO: " + "logger call back");
 					Node callBackNode = loggerMessagePasser.nodeMap.get(receivedTimeStampedMessage.source);
 					Socket callBackSocket = new Socket(InetAddress.getByName(callBackNode.ip),callBackNode.port);
 					ObjectOutputStream oos = new ObjectOutputStream(callBackSocket.getOutputStream());
@@ -76,7 +76,7 @@ class LoggerReadInputStream extends Thread{
 					if(loggerMessagePasser.clockType == ClockType.LOGICAL){
 						//send back time stamps information of logical clock
 
-						System.out.println("Set your clock LOGICAL!");
+						System.out.println("INFO: " + "Set your clock LOGICAL!");
 						setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set_clock", null, ClockType.LOGICAL);
 						setClockMessage.set_source(loggerMessagePasser.local_name);
 						oos.writeObject(setClockMessage);
@@ -87,7 +87,7 @@ class LoggerReadInputStream extends Thread{
 					//send back time stamps information of vector clock
 					else if(loggerMessagePasser.clockType == ClockType.VECTOR){
 
-						System.out.println("Set your clock VECTOR!");
+						System.out.println("INFO: " + "Set your clock VECTOR!");
 						setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set_clock", null, ClockType.VECTOR);
 						setClockMessage.set_source(loggerMessagePasser.local_name);
 						oos.writeObject(setClockMessage);
@@ -96,7 +96,7 @@ class LoggerReadInputStream extends Thread{
 
 					}
 					else{
-						System.out.println("logger's clock is not set yet");
+						System.out.println("INFO: " + "logger's clock is not set yet");
 					}
 				}
 			} catch (SocketException e){
