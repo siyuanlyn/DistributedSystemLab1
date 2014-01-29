@@ -43,13 +43,8 @@ class LoggerListenerThread extends Thread{
 			try {
 				Socket client = serverSocket.accept();
 				System.out.println("accepted: " + client.toString());
-				Thread readInputStreamThread = new ReadInputStream(client, messagePasser);
-				readInputStreamThread.start();
-				
-				
-				
-				
-				
+				Thread LoggerReadInputStream = new LoggerReadInputStream(client, loggerMessagePasser);
+				LoggerReadInputStream.start();
 			} catch (SocketException e){
 				System.err.println("server listening socket down");
 				break;
