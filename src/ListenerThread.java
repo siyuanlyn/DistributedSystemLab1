@@ -39,6 +39,7 @@ class LoggerListenerThread extends Thread{
 		this.loggerMessagePasser = loggerMessagePasser;
 	}
 	public void run(){
+		System.out.println("logger listener thread!");
 		while(true){
 			try {
 				Socket client = serverSocket.accept();

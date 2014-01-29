@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 
 
 public class CentralizedLogger {
@@ -16,9 +17,13 @@ public class CentralizedLogger {
 			loggerMessagePasser.clockType = ClockType.LOGICAL;
 			if(!loggerMessagePasser.clockSet){
 				for(String nodeName : loggerMessagePasser.streamMap.keySet()){
-					setClockMessage = new TimeStampedMessage(nodeName, "set clock", null, ClockType.LOGICAL);
+					setClockMessage = new TimeStampedMessage(nodeName, "set_clock", null, ClockType.LOGICAL);
 					setClockMessage.set_source(loggerMessagePasser.local_name);
-					loggerMessagePasser.streamMap.get(nodeName).writeObject(setClockMessage);
+					ObjectOutputStream oos = loggerMessagePasser.streamMap.get(nodeName);
+					oos.writeObject(setClockMessage);
+					oos.flush();
+					oos.reset();
+
 				}
 				loggerMessagePasser.clockSet = true;
 			}
@@ -28,15 +33,18 @@ public class CentralizedLogger {
 			loggerMessagePasser.clockType = ClockType.VECTOR;
 			if(!loggerMessagePasser.clockSet){
 				for(String nodeName : loggerMessagePasser.streamMap.keySet()){
-					setClockMessage = new TimeStampedMessage(nodeName, "set clock", null, ClockType.VECTOR);
+					setClockMessage = new TimeStampedMessage(nodeName, "set_clock", null, ClockType.VECTOR);
 					setClockMessage.set_source(loggerMessagePasser.local_name);
-					loggerMessagePasser.streamMap.get(nodeName).writeObject(setClockMessage);
+					ObjectOutputStream oos = loggerMessagePasser.streamMap.get(nodeName);
+					oos.writeObject(setClockMessage);
+					oos.flush();
+					oos.reset();
 				}
 				loggerMessagePasser.clockSet = true;
 			}
 			break;
 		}
-		
+
 		System.out.println("logger terminates");
 	}
 }

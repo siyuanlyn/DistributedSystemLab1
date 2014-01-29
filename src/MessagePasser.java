@@ -1,11 +1,9 @@
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -24,12 +22,19 @@ class LoggerMessagePasser extends MessagePasser{
 	public LoggerMessagePasser(String configuration_filename, String local_name) throws IOException {
 		super(configuration_filename, local_name);
 	}
-	ClockType clockType = null;
 	boolean clockSet = false;
 	
+	@Override
+	public void startListenerThread() throws IOException{
+		Thread loggerListenerThread = new LoggerListenerThread(this);
+		loggerListenerThread.start();
+	}
+	
 }
+
 public class MessagePasser {
 
+	@SuppressWarnings("rawtypes")
 	LinkedHashMap networkTable;
 	HashMap<String, Node> nodeMap = new HashMap<String, Node>();
 //	HashMap<String, Socket> socketMap = new HashMap<String, Socket>();
@@ -47,6 +52,23 @@ public class MessagePasser {
 	String configuration_filename;
 	String local_name;
 	
+	ClockService clockService = null;
+	ClockType clockType = null;
+	
+	public void setClockService(ClockType clockType){
+		switch(clockType){
+		case LOGICAL:
+			clockService = Clock.getClockService(LogicalClock.factory);
+			break;
+		case VECTOR:
+			clockService = Clock.getClockService(VectorClock.factory);
+			break;
+		default:
+			System.err.println("SET CLOCK SERVICE ERROR. LOGGER SERVER MAY FAIL TO SET UP");
+		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void parseConfigurationFile() throws IOException{
 		configurationFile = new File("D:\\Dropbox\\" + configuration_filename);
 		lastModifiedTime = configurationFile.lastModified();
@@ -68,11 +90,14 @@ public class MessagePasser {
 		}
 		int portNumber = nodeMap.get(local_name).port;
 		serverSocket = new ServerSocket(portNumber);
+		startListenerThread();
+	}
+	
+	public void startListenerThread() throws IOException{
 		Thread listenerThread = new ListenerThread(this);
 		listenerThread.start();
 	}
 	
-	@SuppressWarnings("unchecked")
 	public MessagePasser(String configuration_filename, String local_name) throws IOException{
 		this.configuration_filename = configuration_filename;
 		this.local_name = local_name;
@@ -103,9 +128,42 @@ public class MessagePasser {
 		}
 	}
 
-	void send(Message message) throws UnknownHostException, IOException{
+	@SuppressWarnings("resource")
+	void send(Message message) throws UnknownHostException, IOException, InterruptedException{
 		
 		reconfiguration();
+		if(this.clockType == null){	//clock type is not yet set by logger
+			//send request to logger
+			if(!this.streamMap.containsKey("logger")){	//not connect yet
+				try{
+					Socket destSocket = new Socket(InetAddress.getByName(nodeMap.get("logger").ip), nodeMap.get("logger").port);
+					ObjectOutputStream oos = new ObjectOutputStream(destSocket.getOutputStream());
+					streamMap.put("logger", oos);
+					//System.out.println("streamMap updated! " + streamMap.toString());
+				} catch (ConnectException e){
+					System.err.println("CANNOT CONNECT TO LOGGER");
+					return;
+				}
+			}
+			TimeStampedMessage clockSetRequest = new TimeStampedMessage("logger", "clock_set_request", null, null);
+			clockSetRequest.set_source(local_name);
+			//send it
+			ObjectOutputStream oos = this.streamMap.get("logger");
+			oos.writeObject(clockSetRequest);
+			oos.flush();
+			oos.reset();
+			
+			//wait the logger's set up message
+			System.out.println("Wait for logger's response for 5 sec.");
+			Thread.sleep(5000);
+			if(this.clockType != null){
+				System.out.println("clock type set as: " + this.clockType);
+			}
+			else{
+				System.err.println("NO RESPONSE FROM LOGGER");
+				return;
+			}
+		}
 		
 		//System.out.println("sending..................");
 		message.set_action(checkSendingRules(message));
@@ -133,6 +191,7 @@ public class MessagePasser {
 		//System.out.println("sending done..................");
 	}
 
+	@SuppressWarnings("resource")
 	void sendMessage(Message message) throws IOException{
 		if(!streamMap.containsKey(message.destination)){
 			System.out.println("new socket: " + nodeMap.get(message.destination).ip + " " + nodeMap.get(message.destination).port);
@@ -212,6 +271,7 @@ public class MessagePasser {
 		//System.out.println("Receiving done..................");
 	}
 
+	@SuppressWarnings("rawtypes")
 	String checkSendingRules(Message message){
 
 		for(Map m : sendRuleList){
@@ -264,6 +324,7 @@ public class MessagePasser {
 		return "none";
 	}
 
+	@SuppressWarnings("rawtypes")
 	String checkReceivingRules(Message message){
 
 		for(Map m : receiveRuleList){

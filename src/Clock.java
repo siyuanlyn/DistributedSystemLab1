@@ -64,9 +64,7 @@ enum ClockType{
 
 public class Clock {
 	public static ClockService getClockService(ClockFactory factory){
-		
 		return factory.getClock();
-		
 	}
 }
 

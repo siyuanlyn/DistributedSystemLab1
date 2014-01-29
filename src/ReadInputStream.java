@@ -21,6 +21,11 @@ public class ReadInputStream extends Thread{
 		while(true){
 			try {
 				Message receivedMessage = (Message)ois.readObject();
+				//if the message is set clock from logger, set the clock and don't enqueue it
+				if(receivedMessage.kind.equals("set_clock") && receivedMessage.source.equals("logger")){
+					messagePasser.clockType = ((TimeStampedMessage)receivedMessage).getClockType();
+					continue;
+				}
 				if(!messagePasser.streamMap.containsKey(receivedMessage.source)){
 					//add the stream in the stream map
 					System.out.println("call back");
@@ -70,18 +75,22 @@ class LoggerReadInputStream extends Thread{
 					case LOGICAL:
 						//send back time stamps information of logical clock
 						if(!loggerMessagePasser.clockSet){
-							setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set clock", null, ClockType.LOGICAL);
+							setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set_clock", null, ClockType.LOGICAL);
 							setClockMessage.set_source(loggerMessagePasser.local_name);
 							oos.writeObject(setClockMessage);
+							oos.flush();
+							oos.reset();
 							loggerMessagePasser.clockSet = true;
 						}
 						break;
 					case VECTOR:
 						//send back time stamps information of vector clock
 						if(!loggerMessagePasser.clockSet){
-							setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set clock", null, ClockType.VECTOR);
+							setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set_clock", null, ClockType.VECTOR);
 							setClockMessage.set_source(loggerMessagePasser.local_name);
 							oos.writeObject(setClockMessage);
+							oos.flush();
+							oos.reset();
 							loggerMessagePasser.clockSet = true;
 						}
 						break;
