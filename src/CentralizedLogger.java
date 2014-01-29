@@ -15,32 +15,25 @@ public class CentralizedLogger {
 		case "logical":
 			System.out.println("logical");
 			loggerMessagePasser.clockType = ClockType.LOGICAL;
-			if(!loggerMessagePasser.clockSet){
-				for(String nodeName : loggerMessagePasser.streamMap.keySet()){
-					setClockMessage = new TimeStampedMessage(nodeName, "set_clock", null, ClockType.LOGICAL);
-					setClockMessage.set_source(loggerMessagePasser.local_name);
-					ObjectOutputStream oos = loggerMessagePasser.streamMap.get(nodeName);
-					oos.writeObject(setClockMessage);
-					oos.flush();
-					oos.reset();
-
-				}
-				loggerMessagePasser.clockSet = true;
+			for(String nodeName : loggerMessagePasser.streamMap.keySet()){
+				setClockMessage = new TimeStampedMessage(nodeName, "set_clock", null, ClockType.LOGICAL);
+				setClockMessage.set_source(loggerMessagePasser.local_name);
+				ObjectOutputStream oos = loggerMessagePasser.streamMap.get(nodeName);
+				oos.writeObject(setClockMessage);
+				oos.flush();
+				oos.reset();
 			}
 			break;
 		case "vector":
 			System.out.println("vector");
 			loggerMessagePasser.clockType = ClockType.VECTOR;
-			if(!loggerMessagePasser.clockSet){
-				for(String nodeName : loggerMessagePasser.streamMap.keySet()){
-					setClockMessage = new TimeStampedMessage(nodeName, "set_clock", null, ClockType.VECTOR);
-					setClockMessage.set_source(loggerMessagePasser.local_name);
-					ObjectOutputStream oos = loggerMessagePasser.streamMap.get(nodeName);
-					oos.writeObject(setClockMessage);
-					oos.flush();
-					oos.reset();
-				}
-				loggerMessagePasser.clockSet = true;
+			for(String nodeName : loggerMessagePasser.streamMap.keySet()){
+				setClockMessage = new TimeStampedMessage(nodeName, "set_clock", null, ClockType.VECTOR);
+				setClockMessage.set_source(loggerMessagePasser.local_name);
+				ObjectOutputStream oos = loggerMessagePasser.streamMap.get(nodeName);
+				oos.writeObject(setClockMessage);
+				oos.flush();
+				oos.reset();
 			}
 			break;
 		}

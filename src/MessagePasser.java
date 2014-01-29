@@ -7,6 +7,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,7 +23,6 @@ class LoggerMessagePasser extends MessagePasser{
 	public LoggerMessagePasser(String configuration_filename, String local_name) throws IOException {
 		super(configuration_filename, local_name);
 	}
-	boolean clockSet = false;
 	
 	@Override
 	public void startListenerThread() throws IOException{
@@ -37,7 +37,6 @@ public class MessagePasser {
 	@SuppressWarnings("rawtypes")
 	LinkedHashMap networkTable;
 	HashMap<String, Node> nodeMap = new HashMap<String, Node>();
-//	HashMap<String, Socket> socketMap = new HashMap<String, Socket>();
 	HashMap<String, ObjectOutputStream> streamMap= new HashMap<String, ObjectOutputStream>();
 	ServerSocket serverSocket;
 	ConcurrentLinkedQueue<Message> messageQueue = new ConcurrentLinkedQueue<Message>();
@@ -129,9 +128,7 @@ public class MessagePasser {
 	}
 
 	@SuppressWarnings("resource")
-	void send(Message message) throws UnknownHostException, IOException, InterruptedException{
-		
-		reconfiguration();
+	void clockServiceInit() throws UnknownHostException, IOException, InterruptedException{
 		if(this.clockType == null){	//clock type is not yet set by logger
 			//send request to logger
 			if(!this.streamMap.containsKey("logger")){	//not connect yet
@@ -139,7 +136,7 @@ public class MessagePasser {
 					Socket destSocket = new Socket(InetAddress.getByName(nodeMap.get("logger").ip), nodeMap.get("logger").port);
 					ObjectOutputStream oos = new ObjectOutputStream(destSocket.getOutputStream());
 					streamMap.put("logger", oos);
-					//System.out.println("streamMap updated! " + streamMap.toString());
+					System.out.println("streamMap updated! " + streamMap.toString());
 				} catch (ConnectException e){
 					System.err.println("CANNOT CONNECT TO LOGGER");
 					return;
@@ -149,13 +146,14 @@ public class MessagePasser {
 			clockSetRequest.set_source(local_name);
 			//send it
 			ObjectOutputStream oos = this.streamMap.get("logger");
+			System.out.println("sending clock set request");
 			oos.writeObject(clockSetRequest);
 			oos.flush();
 			oos.reset();
-			
+			System.out.println("clock set request sent");
 			//wait the logger's set up message
-			System.out.println("Wait for logger's response for 5 sec.");
-			Thread.sleep(5000);
+			System.out.println("Wait for logger's response for 1 sec.");
+			Thread.sleep(1000);
 			if(this.clockType != null){
 				System.out.println("clock type set as: " + this.clockType);
 			}
@@ -164,6 +162,19 @@ public class MessagePasser {
 				return;
 			}
 		}
+	}
+	
+	void send(Message message) throws UnknownHostException, IOException, InterruptedException{
+		
+		reconfiguration();
+		try{
+			clockServiceInit();
+		} catch (SocketException e){
+			System.err.println("CANNOT CONNECT TO LOGGER");
+			return;
+		}
+		
+		
 		
 		//System.out.println("sending..................");
 		message.set_action(checkSendingRules(message));
@@ -220,9 +231,14 @@ public class MessagePasser {
 		}
 	}
 
-	Message receive() throws IOException{
+	Message receive() throws IOException, InterruptedException{
 		
 		reconfiguration();
+		try{
+			clockServiceInit();
+		} catch (SocketException e){
+			System.err.println("CANNOT CONNECT TO LOGGER");
+		}
 		
 		receiveMessage();
 		if(!popReceivingQueue.isEmpty()){
