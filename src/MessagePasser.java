@@ -15,13 +15,23 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.yaml.snakeyaml.Yaml;
 
+
+class LoggerMessagePasser extends MessagePasser{
+
+	public LoggerMessagePasser(String configuration_filename, String local_name) throws IOException {
+		super(configuration_filename, local_name);
+	}
+	
+	
+}
 public class MessagePasser {
 
 	LinkedHashMap networkTable;
 	HashMap<String, Node> nodeMap = new HashMap<String, Node>();
-	HashMap<String, Socket> socketMap = new HashMap<String, Socket>();
+//	HashMap<String, Socket> socketMap = new HashMap<String, Socket>();
 	HashMap<String, ObjectOutputStream> streamMap= new HashMap<String, ObjectOutputStream>();
 	ServerSocket serverSocket;
 	ConcurrentLinkedQueue<Message> messageQueue = new ConcurrentLinkedQueue<Message>();
@@ -57,7 +67,7 @@ public class MessagePasser {
 		}
 		int portNumber = nodeMap.get(local_name).port;
 		serverSocket = new ServerSocket(portNumber);
-		Thread listenerThread = new ListenerThread(serverSocket, messageQueue);
+		Thread listenerThread = new ListenerThread(serverSocket, this);
 		listenerThread.start();
 	}
 	
@@ -74,7 +84,7 @@ public class MessagePasser {
 			//System.out.println("configuration file modified!!!");
 			nodeMap.clear();
 			//System.out.println("nodeMap cleared! "+ nodeMap.toString());
-			socketMap.clear();
+//			socketMap.clear();
 			//System.out.println("socketMap cleared! "+ socketMap.toString());
 			streamMap.clear();
 			//System.out.println("streamMap cleared! "+ streamMap.toString());
@@ -123,15 +133,15 @@ public class MessagePasser {
 	}
 
 	void sendMessage(Message message) throws IOException{
-		if(!socketMap.containsKey(message.destination)){
-			//System.out.println("new socket: " + nodeMap.get(message.destination).ip + " " + nodeMap.get(message.destination).port);
+		if(!streamMap.containsKey(message.destination)){
+			System.out.println("new socket: " + nodeMap.get(message.destination).ip + " " + nodeMap.get(message.destination).port);
 			if(!nodeMap.containsKey(message.destination)){
 				System.err.println("Can't find this node in configuration file!");
 				return;
 			}
 			try{
 				Socket destSocket = new Socket(InetAddress.getByName(nodeMap.get(message.destination).ip), nodeMap.get(message.destination).port);
-				socketMap.put(message.destination, destSocket);
+//				socketMap.put(message.destination, destSocket);
 				//System.out.println("socketMap updated! " + socketMap.toString());
 				ObjectOutputStream oos = new ObjectOutputStream(destSocket.getOutputStream());
 				streamMap.put(message.destination, oos);
