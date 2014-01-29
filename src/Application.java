@@ -37,7 +37,15 @@ public class Application {
 					messagePasser.send(message);
 					break;
 				case "receive":
-					System.out.println(messagePasser.receive().toString());
+					Message receivedMessage= messagePasser.receive();
+					System.out.println(receivedMessage.getClass());
+					if(receivedMessage.getClass().equals(Message.class)){
+						System.out.println("Regular Message Received!");
+					}
+					if(receivedMessage.getClass().equals(TimeStampedMessage.class)){
+						System.out.println("Time Stamped Message Received!");
+					}
+					System.out.println(receivedMessage.toString());
 					break;
 				default:
 					System.err.println("Illegal input format! Please enter again!");

@@ -77,7 +77,7 @@ class TimeStampedMessage extends Message{
 		case LOGICAL:
 			return "[source=" + source + "; destination=" + destination + "; kind=" + kind
 					+ "; data=" + data + "; seqNum=" + sequenceNumber + "; action=" + action
-					+ "; duplicate=" + duplicate + "processNo=" + logicalTimeStamps.processNo
+					+ "; duplicate=" + duplicate + "; processNo=" + logicalTimeStamps.processNo
 					+ "; logicalTimeStamp=" + logicalTimeStamps.timeStamp + "]" ;
 		case VECTOR:
 			return "[source=" + source + "; destination=" + destination + "; kind=" + kind

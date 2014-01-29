@@ -13,11 +13,12 @@ class LogicalClock extends ClockService{
 	LogicalTimeStamps internalLogicalClock;
 	
 	private LogicalClock(){
-		internalLogicalClock = new LogicalTimeStamps(this.processNo, 0);
+		internalLogicalClock = new LogicalTimeStamps(this.processNo, 1);
 	}
 	
 	public void setProcessNo(int processNo){
 		this.processNo = processNo;
+		this.internalLogicalClock.processNo = processNo;
 	}
 	
 	public static ClockFactory factory = new ClockFactory(){
@@ -37,12 +38,16 @@ class VectorClock extends ClockService{
 	private int processCount;
 	VectorTimeStamps internalVectorClock;
 	
-	public void setProcessNo(int processNo){
-		this.processNo = processNo;
-	}
-	
-	public void setProcessCount(int processCount){
+	public void initializeTimeStamps(int processNo, int processCount){
 		this.processCount = processCount;
+		this.processNo = processNo;
+		this.internalVectorClock = new VectorTimeStamps(new int[this.processCount]);
+		for(int i=0; i<processCount; i++){
+			if(i != this.processNo)
+				this.internalVectorClock.timeStampMatrix[i] = 0;
+			else
+				this.internalVectorClock.timeStampMatrix[i] = 1;
+		}
 	}
 	
 	private VectorClock(){

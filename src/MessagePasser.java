@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -53,14 +54,18 @@ public class MessagePasser {
 	
 	ClockService clockService = null;
 	ClockType clockType = null;
+	ProcessNo processNo = null;
+	int processCount = 0;
 	
 	public void setClockService(ClockType clockType){
 		switch(clockType){
 		case LOGICAL:
 			clockService = Clock.getClockService(LogicalClock.factory);
+			((LogicalClock)clockService).setProcessNo(processNo.value);
 			break;
 		case VECTOR:
 			clockService = Clock.getClockService(VectorClock.factory);
+			((VectorClock)clockService).initializeTimeStamps(processNo.value, processCount);
 			break;
 		default:
 			System.err.println("SET CLOCK SERVICE ERROR. LOGGER SERVER MAY FAIL TO SET UP");
@@ -69,6 +74,7 @@ public class MessagePasser {
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void parseConfigurationFile() throws IOException{
+		setProcessNo();
 		configurationFile = new File("D:\\Dropbox\\" + configuration_filename);
 		lastModifiedTime = configurationFile.lastModified();
 		InputStream input = new FileInputStream("D:\\Dropbox\\" + configuration_filename);
@@ -81,6 +87,8 @@ public class MessagePasser {
 		receiveRuleList = (ArrayList<LinkedHashMap<String, String>>) networkTable.get("receiveRules");
 		//System.out.println(sendRuleList.toString());
 		//System.out.println(receiveRuleList.toString());
+		this.processCount = configList.size();
+		System.out.println(this.processCount);
 		for(Map m : configList){
 			String name = (String)m.get("name");
 			String ip = (String)m.get("ip");
@@ -90,6 +98,30 @@ public class MessagePasser {
 		int portNumber = nodeMap.get(local_name).port;
 		serverSocket = new ServerSocket(portNumber);
 		startListenerThread();
+	}
+	
+	
+	public void setProcessNo(){
+		switch(this.local_name.toLowerCase()){
+		case "alice":
+			this.processNo = ProcessNo.ALICE;
+			break;
+		case "bob":
+			this.processNo = ProcessNo.BOB;
+			break;
+		case "charlie":
+			this.processNo = ProcessNo.CHARLIE;
+			break;
+		case "daphnie":
+			this.processNo = ProcessNo.DAPHNIE;
+			break;
+		case "logger":
+			this.processNo = ProcessNo.LOGGER;
+			break;
+		default:
+			System.err.println("Unknown Process!");
+			
+		}
 	}
 	
 	public void startListenerThread() throws IOException{
@@ -156,10 +188,7 @@ public class MessagePasser {
 			Thread.sleep(1000);
 			if(this.clockType != null){
 				System.out.println("clock type set as: " + this.clockType);
-				if(this.clockType == ClockType.LOGICAL) 
-					this.clockService = Clock.getClockService(LogicalClock.factory);
-				if(this.clockType == ClockType.VECTOR)
-					this.clockService = Clock.getClockService(VectorClock.factory);
+				setClockService(this.clockType);
 			}
 			else{
 				System.err.println("NO RESPONSE FROM LOGGER");
@@ -169,8 +198,16 @@ public class MessagePasser {
 	}
 	
 	void send(Message message) throws UnknownHostException, IOException, InterruptedException{
-		
 		reconfiguration();
+		if(this.clockType == ClockType.LOGICAL){
+			((LogicalClock)this.clockService).ticks();
+			System.out.println("logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
+		}
+		if(this.clockType == ClockType.VECTOR){
+			((VectorClock)this.clockService).ticks();
+			System.out.println("vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
+		}
+		
 		try{
 			clockServiceInit();
 		} catch (SocketException e){
@@ -215,8 +252,6 @@ public class MessagePasser {
 			}
 			try{
 				Socket destSocket = new Socket(InetAddress.getByName(nodeMap.get(message.destination).ip), nodeMap.get(message.destination).port);
-//				socketMap.put(message.destination, destSocket);
-				//System.out.println("socketMap updated! " + socketMap.toString());
 				ObjectOutputStream oos = new ObjectOutputStream(destSocket.getOutputStream());
 				streamMap.put(message.destination, oos);
 				//System.out.println("streamMap updated! " + streamMap.toString());
@@ -257,6 +292,9 @@ public class MessagePasser {
 	Message receive() throws IOException, InterruptedException{
 		
 		reconfiguration();
+		
+		
+		
 		try{
 			clockServiceInit();
 		} catch (SocketException e){
@@ -266,6 +304,31 @@ public class MessagePasser {
 		receiveMessage();
 		if(!popReceivingQueue.isEmpty()){
 			Message popMessage = popReceivingQueue.poll();
+			if(popMessage.getClass().equals(TimeStampedMessage.class)){
+				
+				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.LOGICAL){
+					int maxTimeStamp = Math.max(((LogicalClock)this.clockService).internalLogicalClock.timeStamp, ((TimeStampedMessage)popMessage).getLogicalTimeStamps().timeStamp);
+					((LogicalClock)this.clockService).internalLogicalClock.timeStamp = maxTimeStamp;
+					System.out.println("logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
+				}
+				
+				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.VECTOR){
+					for(int i=0; i<this.processCount; i++){
+						if(i != this.processNo.value){
+							((VectorClock)this.clockService).internalVectorClock.timeStampMatrix[i] = ((TimeStampedMessage)popMessage).getVectorTimeStamps().timeStampMatrix[i];
+							System.out.println("vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
+						}
+					}
+				}
+			}
+			
+			if(this.clockType == ClockType.LOGICAL){
+				((LogicalClock)this.clockService).ticks();
+			}
+			if(this.clockType == ClockType.VECTOR){
+				((VectorClock)this.clockService).ticks();
+			}
+			
 			return popMessage;
 		}
 		else{
@@ -416,4 +479,31 @@ public class MessagePasser {
 		}
 		return "none";
 	}
+	
+//	int getProcessNo(String name){
+//		switch(name.toLowerCase()){
+//		case "alice" :
+//			return 1;
+//		case "bob" :
+//			return 2;
+//		case "charlie" :
+//			return 3;
+//		case "daphnie" :
+//			return 4;
+//		case "logger" :
+//			return 0;
+//		default :
+//			return -1;
+//		}
+//	}
 }
+
+enum ProcessNo{
+	LOGGER(0),ALICE(1),BOB(2),CHARLIE(3),DAPHNIE(4);
+	public int value;
+	private ProcessNo(int value){
+		this.value = value;
+	}
+}
+
+
