@@ -156,6 +156,10 @@ public class MessagePasser {
 			Thread.sleep(1000);
 			if(this.clockType != null){
 				System.out.println("clock type set as: " + this.clockType);
+				if(this.clockType == ClockType.LOGICAL) 
+					this.clockService = Clock.getClockService(LogicalClock.factory);
+				if(this.clockType == ClockType.VECTOR)
+					this.clockService = Clock.getClockService(VectorClock.factory);
 			}
 			else{
 				System.err.println("NO RESPONSE FROM LOGGER");
@@ -173,8 +177,6 @@ public class MessagePasser {
 			System.err.println("CANNOT CONNECT TO LOGGER");
 			return;
 		}
-		
-		
 		
 		//System.out.println("sending..................");
 		message.set_action(checkSendingRules(message));
@@ -204,6 +206,7 @@ public class MessagePasser {
 
 	@SuppressWarnings("resource")
 	void sendMessage(Message message) throws IOException{
+		
 		if(!streamMap.containsKey(message.destination)){
 			System.out.println("new socket: " + nodeMap.get(message.destination).ip + " " + nodeMap.get(message.destination).port);
 			if(!nodeMap.containsKey(message.destination)){
@@ -223,7 +226,27 @@ public class MessagePasser {
 				return;
 			}
 		}
-		streamMap.get(message.destination).writeObject(message);
+		if(this.clockType == null){
+			System.out.println("Message without time stamp will be sent!");
+			streamMap.get(message.destination).writeObject(message);
+		}
+		else{
+			System.out.println("Time stamped message will be sent!");
+			TimeStampedMessage tsm = new TimeStampedMessage(message.destination, message.kind, message.data, this.clockType);
+			tsm.set_source(message.source);
+			tsm.set_action(message.action);
+			tsm.duplicate = message.duplicate;
+			tsm.sequenceNumber = message.sequenceNumber;
+			
+			
+			if(this.clockType == ClockType.LOGICAL){
+				tsm.setLogicalTimeStamps(((LogicalClock)this.clockService).internalLogicalClock);
+			}
+			if(this.clockType == ClockType.VECTOR){
+				tsm.setVectorTimeStamps(((VectorClock)this.clockService).internalVectorClock);
+			}
+			streamMap.get(message.destination).writeObject(tsm);
+		}
 		streamMap.get(message.destination).flush();
 		streamMap.get(message.destination).reset();
 		while(!delaySendingQueue.isEmpty()){

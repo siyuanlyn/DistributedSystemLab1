@@ -1,3 +1,5 @@
+import java.io.Serializable;
+
 abstract class ClockService{
 	public void ticks() {}
 }
@@ -68,7 +70,11 @@ public class Clock {
 	}
 }
 
-class LogicalTimeStamps{
+class LogicalTimeStamps implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	int processNo;
 	int timeStamp;
 	public LogicalTimeStamps(int processNo, int timeStamp){
@@ -77,7 +83,11 @@ class LogicalTimeStamps{
 	}
 }
 
-class VectorTimeStamps{
+class VectorTimeStamps implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	int[] timeStampMatrix;
 	public VectorTimeStamps(int[] timeStampMatrix){
 		this.timeStampMatrix = timeStampMatrix;
