@@ -1,11 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-//
-//
-//
-//
-//
+
 public class Application {
 	final static String usage = "Enter the name of people you'd like to send message to,"
 							  + " the kind of message and the message as follows:"
