@@ -15,7 +15,7 @@ public class Application {
 		MessagePasser messagePasser = new MessagePasser(args[0], args[1]);
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		while(true){
-			System.out.println("Enter the command you want to execute: send, receive or retrieveLog");
+			System.out.println("Enter the command you want to execute: send, receive, retrieve (log from logger) or print (time stamp)");
 			String command = in.readLine();
 			String dest, kind, sendingMessage;
 			String logIt = null;
@@ -68,7 +68,7 @@ public class Application {
 					}
 					System.out.println(receivedMessage.toString());
 					break;
-				case "retrievelog":
+				case "retrieve":
 					System.out.println("Do you want to log this event? Enter yes or no");
 					logIt = in.readLine();
 					while(!(logIt.equalsIgnoreCase("yes") || logIt.equalsIgnoreCase("no"))){
@@ -80,6 +80,19 @@ public class Application {
 						messagePasser.log = true;
 					}
 					messagePasser.retrieveLog();
+					break;
+				case "print" :
+					System.out.println("Do you want to log this event? Enter yes or no");
+					logIt = in.readLine();
+					while(!(logIt.equalsIgnoreCase("yes") || logIt.equalsIgnoreCase("no"))){
+						System.out.println("please enter \"yes\" or \"no\"\n"
+										 + "Do you want to log this event?");
+						logIt = in.readLine();
+					}
+					if(logIt.equalsIgnoreCase("yes")){
+						messagePasser.log = true;
+					}
+					messagePasser.printTimeStamp();
 					break;
 				default:
 					System.err.println("Illegal input format! Please enter again!");

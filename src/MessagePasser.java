@@ -517,7 +517,7 @@ public class MessagePasser {
 	}
 
 	void logEvent(Message logMessage, Function event) throws IOException{
-		System.out.println("LOG THIS " + event);
+		System.out.println("INFO: LOG THIS " + event);
 		TimeStampedMessage timeStampedLog = null;
 		TimeStampedMessage sendingLog = null;
 		if(logMessage.getClass().equals(TimeStampedMessage.class)){
@@ -562,7 +562,6 @@ public class MessagePasser {
 			((VectorClock)this.clockService).ticks();
 			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 		}
-
 		
 		//log first
 		if(this.log){
@@ -583,6 +582,46 @@ public class MessagePasser {
 			System.out.println(logMessage.data.toString());
 		}
 	}
+	
+	void printTimeStamp() throws IOException, InterruptedException{
+		this.function = Function.PRINTSTAMP;
+		TimeStampedMessage tsm = new TimeStampedMessage("logger", "printTimeStamp", null, null);
+
+		try{
+			clockServiceInit();
+		} catch (SocketException e){
+			System.err.println("CANNOT CONNECT TO LOGGER");
+			return;
+		}
+		//ticks
+		if(this.clockType == ClockType.LOGICAL){
+			((LogicalClock)this.clockService).ticks();
+			System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
+		}
+		if(this.clockType == ClockType.VECTOR){
+			((VectorClock)this.clockService).ticks();
+			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
+		}
+		
+		if(this.clockType == ClockType.LOGICAL){
+			System.out.println("Clock type: " + this.clockType + "; Time Stamp:" + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
+			if(this.log){
+				logEvent(tsm, this.function);
+				this.log = false;
+			}
+		}
+		else if(this.clockType == ClockType.VECTOR){
+			System.out.println("Clock type: " + this.clockType + "; Time Stamp:" + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
+			if(this.log){
+				logEvent(tsm, this.function);
+				this.log = false;
+			}
+		}
+		else{
+			System.err.println("CLOCK TYPE IS NOT SET YET. CANNOT PRINT TIME STAMP");
+		}
+		
+	}
 }
 
 enum ProcessNo{
@@ -594,7 +633,7 @@ enum ProcessNo{
 }
 
 enum Function{
-	SEND,RECEIVE,RETRIEVE;
+	SEND,RECEIVE,RETRIEVE,PRINTSTAMP;
 }
 
 
