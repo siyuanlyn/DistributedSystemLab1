@@ -11,19 +11,33 @@ public class Application {
 		return sequenceNumber++;
 	}
 
+
+		
+
 	public static void main(String[] args) throws IOException, InterruptedException{
 		MessagePasser messagePasser = new MessagePasser(args[0], args[1]);
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		while(true){
-			System.out.println("Enter the command you want to execute: send or receive");
+			System.out.println("Enter the command you want to execute: send, receive or retrieveLog");
 			String command = in.readLine();
-			String dest, kind, sendingMessage;	
+			String dest, kind, sendingMessage;
+			String logIt = null;
 			switch(command.toLowerCase()){
 				case "send":
+					System.out.println("Do you want to log this event? Enter yes or no");
+					logIt = in.readLine();
+					while(!(logIt.equalsIgnoreCase("yes") || logIt.equalsIgnoreCase("no"))){
+						System.out.println("please enter \"yes\" or \"no\"\n"
+										 + "Do you want to log this event?");
+						logIt = in.readLine();
+					}
+					if(logIt.equalsIgnoreCase("yes")){
+						messagePasser.log = true;
+					}
 					System.out.println(usage);
 					String[] input = in.readLine().split("/");
 					while(input.length != 3){
-						System.err.println("Illegal input format! Please enter again!");
+						System.err.println("Illegal input format! Please enter again!\n" + usage);
 						Thread.sleep(1);
 						System.out.println(usage);
 						input = in.readLine().split("/");
@@ -37,6 +51,16 @@ public class Application {
 					messagePasser.send(message);
 					break;
 				case "receive":
+					System.out.println("Do you want to log this event? Enter yes or no");
+					logIt = in.readLine();
+					while(!(logIt.equalsIgnoreCase("yes") || logIt.equalsIgnoreCase("no"))){
+						System.out.println("please enter \"yes\" or \"no\"\n"
+										 + "Do you want to log this event?");
+						logIt = in.readLine();
+					}
+					if(logIt.equalsIgnoreCase("yes")){
+						messagePasser.log = true;
+					}
 					Message receivedMessage= messagePasser.receive();
 					System.out.println(receivedMessage.getClass());
 					if(receivedMessage.getClass().equals(Message.class)){
@@ -46,6 +70,9 @@ public class Application {
 						System.out.println("Time Stamped Message Received!");
 					}
 					System.out.println(receivedMessage.toString());
+					break;
+				case "retrievelog":
+					messagePasser.retrieveLog();
 					break;
 				default:
 					System.err.println("Illegal input format! Please enter again!");

@@ -5,6 +5,8 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.Arrays;
+import java.util.Collections;
 
 
 public class ReadInputStream extends Thread{
@@ -75,28 +77,71 @@ class LoggerReadInputStream extends Thread{
 					TimeStampedMessage setClockMessage;
 					if(loggerMessagePasser.clockType == ClockType.LOGICAL){
 						//send back time stamps information of logical clock
-
 						System.out.println("INFO: " + "Set your clock LOGICAL!");
 						setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set_clock", null, ClockType.LOGICAL);
 						setClockMessage.set_source(loggerMessagePasser.local_name);
 						oos.writeObject(setClockMessage);
 						oos.flush();
 						oos.reset();
-
 					}
 					//send back time stamps information of vector clock
 					else if(loggerMessagePasser.clockType == ClockType.VECTOR){
-
 						System.out.println("INFO: " + "Set your clock VECTOR!");
 						setClockMessage = new TimeStampedMessage(receivedTimeStampedMessage.source, "set_clock", null, ClockType.VECTOR);
 						setClockMessage.set_source(loggerMessagePasser.local_name);
 						oos.writeObject(setClockMessage);
 						oos.flush();
 						oos.reset();
-
 					}
 					else{
 						System.out.println("INFO: " + "logger's clock is not set yet");
+					}
+				}
+
+				else if(receivedTimeStampedMessage.kind.substring(0, 3).equalsIgnoreCase("log")){
+					System.out.println("INFO: Logger received a log");
+					if(loggerMessagePasser.clockType == ClockType.LOGICAL){
+						LogicalLog logicalLog = new LogicalLog(receivedTimeStampedMessage);
+						loggerMessagePasser.logicalLogList.add(logicalLog);
+					}
+					if(loggerMessagePasser.clockType == ClockType.VECTOR){
+						VectorLog vectorLog = new VectorLog(receivedTimeStampedMessage);
+						loggerMessagePasser.vectorLogList.add(vectorLog);
+					}
+				}
+				else{
+					//if it's a retrieve log request
+					if(receivedTimeStampedMessage.kind.equalsIgnoreCase("retrieve")){
+						//sort the log list
+						if(loggerMessagePasser.clockType == ClockType.LOGICAL){
+							Collections.sort(loggerMessagePasser.logicalLogList, loggerMessagePasser.logicalLogComparator);
+							StringBuffer reply = new StringBuffer();
+							for(LogicalLog ll : loggerMessagePasser.logicalLogList){
+								reply.append("\n(" + ll.processName + "," + ll.timestamp + ") ");
+								reply.append(ll.event + "; ");
+								reply.append(ll.metadata.toString() + "; ");
+							}
+							TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
+							ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
+							oos.writeObject(logReply);
+							oos.flush();
+							oos.reset();
+						}
+						if(loggerMessagePasser.clockType == ClockType.VECTOR){
+							Collections.sort(loggerMessagePasser.vectorLogList, loggerMessagePasser.vectorLogComparator);
+							StringBuffer reply = new StringBuffer();
+							for(VectorLog vl : loggerMessagePasser.vectorLogList){
+								reply.append("\n" + Arrays.toString(vl.timestamp));
+								reply.append("; " + vl.event + "; ");
+								reply.append(vl.metadata.toString() + "; ");
+							}
+							TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
+							ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
+							oos.writeObject(logReply);
+							oos.flush();
+							oos.reset();
+						}
+						
 					}
 				}
 			} catch (SocketException e){

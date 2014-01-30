@@ -21,6 +21,12 @@ import org.yaml.snakeyaml.Yaml;
 
 class LoggerMessagePasser extends MessagePasser{
 
+	
+	ArrayList<LogicalLog> logicalLogList = new ArrayList<LogicalLog>();
+	ArrayList<VectorLog> vectorLogList = new ArrayList<VectorLog>();
+	LogicalLogComparator logicalLogComparator = new LogicalLogComparator();
+	VectorLogComparator vectorLogComparator = new VectorLogComparator();
+	
 	public LoggerMessagePasser(String configuration_filename, String local_name) throws IOException {
 		super(configuration_filename, local_name);
 	}
@@ -57,6 +63,7 @@ public class MessagePasser {
 	ProcessNo processNo = null;
 	int processCount = 0;
 	Function function = null;
+	boolean log = false;
 	
 	public void setClockService(ClockType clockType){
 		switch(clockType){
@@ -191,11 +198,11 @@ public class MessagePasser {
 				System.out.println("INFO: " + "clock type set as: " + this.clockType);
 				setClockService(this.clockType);
 				
-				if(this.clockType == ClockType.LOGICAL && this.function == Function.SEND){
+				if(this.clockType == ClockType.LOGICAL && (this.function == Function.SEND || this.function == Function.RETRIEVE)){
 					((LogicalClock)this.clockService).ticks();
 					System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
 				}
-				if(this.clockType == ClockType.VECTOR && this.function == Function.SEND){
+				if(this.clockType == ClockType.VECTOR && (this.function == Function.SEND || this.function == Function.RETRIEVE)){
 					((VectorClock)this.clockService).ticks();
 					System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 				}
@@ -275,6 +282,9 @@ public class MessagePasser {
 		}
 		if(this.clockType == null){
 			System.out.println("INFO: " + "Message without time stamp will be sent!");
+			if(this.log){
+				System.out.println("INFO: This regular message will not be logged!");
+			}
 			streamMap.get(message.destination).writeObject(message);
 		}
 		else{
@@ -293,6 +303,10 @@ public class MessagePasser {
 				tsm.setVectorTimeStamps(((VectorClock)this.clockService).internalVectorClock);
 			}
 			streamMap.get(message.destination).writeObject(tsm);
+			if(this.log){
+				logEvent(tsm, this.function);
+				this.log = false;
+			}
 		}
 		streamMap.get(message.destination).flush();
 		streamMap.get(message.destination).reset();
@@ -316,6 +330,12 @@ public class MessagePasser {
 		receiveMessage();
 		if(!popReceivingQueue.isEmpty()){
 			Message popMessage = popReceivingQueue.poll();
+			
+			if(this.log){
+				logEvent(popMessage, this.function);
+				this.log = false;
+			}
+			
 			if(popMessage.getClass().equals(TimeStampedMessage.class)){
 				
 				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.LOGICAL){
@@ -492,22 +512,53 @@ public class MessagePasser {
 		return "none";
 	}
 	
-//	int getProcessNo(String name){
-//		switch(name.toLowerCase()){
-//		case "alice" :
-//			return 1;
-//		case "bob" :
-//			return 2;
-//		case "charlie" :
-//			return 3;
-//		case "daphnie" :
-//			return 4;
-//		case "logger" :
-//			return 0;
-//		default :
-//			return -1;
-//		}
-//	}
+	void logEvent(Message logMessage, Function event) throws IOException{
+		System.out.println("LOG THIS " + event);
+		TimeStampedMessage timeStampedLog = null;
+		TimeStampedMessage sendingLog = null;
+		if(logMessage.getClass().equals(TimeStampedMessage.class)){
+			timeStampedLog = (TimeStampedMessage)logMessage;
+			timeStampedLog.data = null;
+			sendingLog = new TimeStampedMessage("logger", "log" + event, timeStampedLog, null);
+			sendingLog.set_source(local_name);
+			ObjectOutputStream oos = this.streamMap.get("logger");
+			oos.writeObject(sendingLog);
+			oos.flush();
+			oos.reset();
+		}
+		else{
+			System.out.println("INFO: This message cannot be logged!");
+		}
+	}
+	
+	void retrieveLog() throws IOException, InterruptedException{
+		reconfiguration();
+		//set up the request message with kind "retrieve"
+		TimeStampedMessage retrieve = new TimeStampedMessage("logger", "retrieve", null, null);
+		
+		this.function = Function.RETRIEVE;
+		if(this.clockType == ClockType.LOGICAL){
+			((LogicalClock)this.clockService).ticks();
+			System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
+		}
+		if(this.clockType == ClockType.VECTOR){
+			((VectorClock)this.clockService).ticks();
+			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
+		}
+		
+		try{
+			clockServiceInit();
+		} catch (SocketException e){
+			System.err.println("CANNOT CONNECT TO LOGGER");
+			return;
+		}
+		//send the request message to the logger
+		ObjectOutputStream oos = this.streamMap.get("logger");
+		oos.writeObject(retrieve);
+		oos.flush();
+		oos.reset();
+		
+	}
 }
 
 enum ProcessNo{
@@ -519,7 +570,8 @@ enum ProcessNo{
 }
 
 enum Function{
-	SEND,RECEIVE;
+	SEND,RECEIVE,RETRIEVE;
 }
+
 
 
