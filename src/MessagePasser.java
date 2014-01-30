@@ -96,7 +96,7 @@ public class MessagePasser {
 		//System.out.println("INFO: " + sendRuleList.toString());
 		//System.out.println("INFO: " + receiveRuleList.toString());
 		this.processCount = configList.size();
-		System.out.println("INFO: " + this.processCount);
+		System.out.println("INFO: The number of processes in configuration file: " + this.processCount);
 		for(Map m : configList){
 			String name = (String)m.get("name");
 			String ip = (String)m.get("ip");
@@ -344,7 +344,8 @@ public class MessagePasser {
 				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.VECTOR){
 					for(int i=0; i<this.processCount; i++){
 						if(i != this.processNo.value){
-							((VectorClock)this.clockService).internalVectorClock.timeStampMatrix[i] = ((TimeStampedMessage)popMessage).getVectorTimeStamps().timeStampMatrix[i];
+							int maxTimeStamp = Math.max(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix[i], ((TimeStampedMessage)popMessage).getVectorTimeStamps().timeStampMatrix[i]);
+							((VectorClock)this.clockService).internalVectorClock.timeStampMatrix[i] = maxTimeStamp;
 						}
 					}
 				}
