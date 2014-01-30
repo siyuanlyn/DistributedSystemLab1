@@ -116,36 +116,40 @@ class LoggerReadInputStream extends Thread{
 					if(receivedTimeStampedMessage.kind.equalsIgnoreCase("retrieve")){
 						//sort the log list
 						if(loggerMessagePasser.clockType == ClockType.LOGICAL){
-							Collections.sort(loggerMessagePasser.logicalLogList, loggerMessagePasser.logicalLogComparator);
-							StringBuffer reply = new StringBuffer();
-							for(LogicalLog ll : loggerMessagePasser.logicalLogList){
-								reply.append("\n(" + ll.processName + "," + ll.timestamp + ") ");
-								reply.append(ll.event + "; ");
-								reply.append(ll.metadata.toString() + "; ");
+							synchronized(loggerMessagePasser.logicalLogList){
+								Collections.sort(loggerMessagePasser.logicalLogList, loggerMessagePasser.logicalLogComparator);
+								StringBuffer reply = new StringBuffer();
+								for(LogicalLog ll : loggerMessagePasser.logicalLogList){
+									reply.append("\n(" + ll.processName + "," + ll.timestamp + ") ");
+									reply.append(ll.event + "; ");
+									reply.append(ll.metadata.toString() + "; ");
+								}
+								TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
+								logReply.set_source("logger");
+								ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
+								oos.writeObject(logReply);
+								oos.flush();
+								oos.reset();
 							}
-							TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
-							logReply.set_source("logger");
-							ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
-							oos.writeObject(logReply);
-							oos.flush();
-							oos.reset();
 						}
 						if(loggerMessagePasser.clockType == ClockType.VECTOR){
-							Collections.sort(loggerMessagePasser.vectorLogList, loggerMessagePasser.vectorLogComparator);
-							StringBuffer reply = new StringBuffer();
-							for(VectorLog vl : loggerMessagePasser.vectorLogList){
-								reply.append("\n" + Arrays.toString(vl.timestamp));
-								reply.append("; " + vl.event + "; ");
-								reply.append(vl.metadata.toString() + "; ");
+							synchronized(loggerMessagePasser.vectorLogList){
+								Collections.sort(loggerMessagePasser.vectorLogList, loggerMessagePasser.vectorLogComparator);
+								StringBuffer reply = new StringBuffer();
+								for(VectorLog vl : loggerMessagePasser.vectorLogList){
+									reply.append("\n" + Arrays.toString(vl.timestamp));
+									reply.append("; " + vl.event + "; ");
+									reply.append(vl.metadata.toString() + "; ");
+								}
+								TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
+								logReply.set_source("logger");
+								ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
+								oos.writeObject(logReply);
+								oos.flush();
+								oos.reset();
 							}
-							TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
-							logReply.set_source("logger");
-							ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
-							oos.writeObject(logReply);
-							oos.flush();
-							oos.reset();
 						}
-						
+
 					}
 				}
 			} catch (SocketException e){
