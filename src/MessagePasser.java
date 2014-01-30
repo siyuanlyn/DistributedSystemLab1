@@ -197,7 +197,7 @@ public class MessagePasser {
 			if(this.clockType != null){
 				System.out.println("INFO: " + "clock type set as: " + this.clockType);
 				setClockService(this.clockType);
-				
+				System.out.println("INFO: " + "clock service initialized");
 				if(this.clockType == ClockType.LOGICAL && (this.function == Function.SEND || this.function == Function.RETRIEVE)){
 					((LogicalClock)this.clockService).ticks();
 					System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
@@ -286,10 +286,13 @@ public class MessagePasser {
 				System.out.println("INFO: This regular message will not be logged!");
 			}
 			streamMap.get(message.destination).writeObject(message);
+			streamMap.get(message.destination).flush();
+			streamMap.get(message.destination).reset();
 		}
 		else{
 			System.out.println("INFO: " + "Time stamped message will be sent!");
 			TimeStampedMessage tsm = new TimeStampedMessage(message.destination, message.kind, message.data, this.clockType);
+			
 			tsm.set_source(message.source);
 			tsm.set_action(message.action);
 			tsm.duplicate = message.duplicate;
@@ -302,14 +305,15 @@ public class MessagePasser {
 			if(this.clockType == ClockType.VECTOR){
 				tsm.setVectorTimeStamps(((VectorClock)this.clockService).internalVectorClock);
 			}
+			System.out.println(tsm.data);
 			streamMap.get(message.destination).writeObject(tsm);
+			streamMap.get(message.destination).flush();
+			streamMap.get(message.destination).reset();
 			if(this.log){
 				logEvent(tsm, this.function);
 				this.log = false;
 			}
 		}
-		streamMap.get(message.destination).flush();
-		streamMap.get(message.destination).reset();
 		while(!delaySendingQueue.isEmpty()){
 			sendMessage(delaySendingQueue.poll());
 		}
@@ -330,11 +334,6 @@ public class MessagePasser {
 		receiveMessage();
 		if(!popReceivingQueue.isEmpty()){
 			Message popMessage = popReceivingQueue.poll();
-			
-			if(this.log){
-				logEvent(popMessage, this.function);
-				this.log = false;
-			}
 			
 			if(popMessage.getClass().equals(TimeStampedMessage.class)){
 				
@@ -361,6 +360,11 @@ public class MessagePasser {
 				System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 			}
 			
+			if(this.log){
+				logEvent(popMessage, this.function);
+				this.log = false;
+			}
+			System.out.println(popMessage.data.toString());
 			return popMessage;
 		}
 		else{
@@ -518,8 +522,13 @@ public class MessagePasser {
 		TimeStampedMessage sendingLog = null;
 		if(logMessage.getClass().equals(TimeStampedMessage.class)){
 			timeStampedLog = (TimeStampedMessage)logMessage;
-			timeStampedLog.data = null;
 			sendingLog = new TimeStampedMessage("logger", "log" + event, timeStampedLog, null);
+			if(this.clockType == ClockType.LOGICAL){
+				sendingLog.setLogicalTimeStamps(((LogicalClock)this.clockService).internalLogicalClock);
+			}
+			if(this.clockType == ClockType.VECTOR){
+				sendingLog.setVectorTimeStamps(((VectorClock)this.clockService).internalVectorClock);
+			}
 			sendingLog.set_source(local_name);
 			ObjectOutputStream oos = this.streamMap.get("logger");
 			oos.writeObject(sendingLog);
@@ -535,7 +544,7 @@ public class MessagePasser {
 		reconfiguration();
 		//set up the request message with kind "retrieve"
 		TimeStampedMessage retrieve = new TimeStampedMessage("logger", "retrieve", null, null);
-		
+		retrieve.set_source(this.local_name);
 		this.function = Function.RETRIEVE;
 		if(this.clockType == ClockType.LOGICAL){
 			((LogicalClock)this.clockService).ticks();
@@ -557,7 +566,9 @@ public class MessagePasser {
 		oos.writeObject(retrieve);
 		oos.flush();
 		oos.reset();
-		
+		System.out.println("INFO: wait logger for 1 sec");
+		Thread.sleep(1000);
+		receive();
 	}
 }
 

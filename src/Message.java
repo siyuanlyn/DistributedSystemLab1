@@ -35,7 +35,7 @@ public class Message implements Serializable{
 
 	public String toString(){
 		return "[source=" + source + "; destination=" + destination + "; kind=" + kind
-				+ "; data=" + data + "; seqNum=" + sequenceNumber + "; action=" + action
+				+ "; data=" + (String)data + "; seqNum=" + sequenceNumber + "; action=" + action
 				+ "; duplicate=" + duplicate + "]" ;
 	}
 }
@@ -76,12 +76,12 @@ class TimeStampedMessage extends Message{
 		switch(this.clockType){
 		case LOGICAL:
 			return "[source=" + source + "; destination=" + destination + "; kind=" + kind
-					+ "; data=" + data + "; seqNum=" + sequenceNumber + "; action=" + action
+					+ "; data=" + (String)data + "; seqNum=" + sequenceNumber + "; action=" + action
 					+ "; duplicate=" + duplicate + "; processNo=" + logicalTimeStamps.processNo
 					+ "; logicalTimeStamp=" + logicalTimeStamps.timeStamp + "]" ;
 		case VECTOR:
 			return "[source=" + source + "; destination=" + destination + "; kind=" + kind
-					+ "; data=" + data + "; seqNum=" + sequenceNumber + "; action=" + action
+					+ "; data=" + (String)data + "; seqNum=" + sequenceNumber + "; action=" + action
 					+ "; duplicate=" + duplicate + "; vectorTimeStamp=" + Arrays.toString(vectorTimeStamps.timeStampMatrix) + "]" ;
 
 		default:

@@ -69,6 +69,7 @@ public class Application {
 					if(receivedMessage.getClass().equals(TimeStampedMessage.class)){
 						System.out.println("Time Stamped Message Received!");
 					}
+					System.out.println("fffffff: " + receivedMessage.data);
 					System.out.println(receivedMessage.toString());
 					break;
 				case "retrievelog":

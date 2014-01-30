@@ -32,6 +32,7 @@ public class ReadInputStream extends Thread{
 				if(!messagePasser.streamMap.containsKey(receivedMessage.source)){
 					//add the stream in the stream map
 					System.out.println("INFO: " + "call back");
+					System.out.println("before dead: "+receivedMessage.source);
 					Node callBackNode = messagePasser.nodeMap.get(receivedMessage.source);
 					Socket callBackSocket = new Socket(InetAddress.getByName(callBackNode.ip), callBackNode.port); 
 					ObjectOutputStream oos = new ObjectOutputStream(callBackSocket.getOutputStream());
@@ -73,6 +74,7 @@ class LoggerReadInputStream extends Thread{
 					Socket callBackSocket = new Socket(InetAddress.getByName(callBackNode.ip),callBackNode.port);
 					ObjectOutputStream oos = new ObjectOutputStream(callBackSocket.getOutputStream());
 					loggerMessagePasser.streamMap.put(receivedTimeStampedMessage.source, oos);
+					System.out.println("INFO: logger's stream map updated! " + loggerMessagePasser.streamMap.toString());
 					//tell the node the clock type
 					TimeStampedMessage setClockMessage;
 					if(loggerMessagePasser.clockType == ClockType.LOGICAL){
@@ -122,6 +124,7 @@ class LoggerReadInputStream extends Thread{
 								reply.append(ll.metadata.toString() + "; ");
 							}
 							TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
+							logReply.set_source("logger");
 							ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
 							oos.writeObject(logReply);
 							oos.flush();
@@ -136,6 +139,7 @@ class LoggerReadInputStream extends Thread{
 								reply.append(vl.metadata.toString() + "; ");
 							}
 							TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
+							logReply.set_source("logger");
 							ObjectOutputStream oos = loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
 							oos.writeObject(logReply);
 							oos.flush();
