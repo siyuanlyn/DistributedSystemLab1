@@ -113,6 +113,10 @@ public class CentralizedLogger {
 		System.out.println("Enter the clock type you want to set for nodes: logical or vector");
 		String command = in.readLine();
 		TimeStampedMessage setClockMessage;
+		while(!(command.equalsIgnoreCase("logical") || command.equalsIgnoreCase("vector"))){
+			System.err.println("Please enter \"logical\" or \"vector\"");
+			command = in.readLine();
+		}
 		switch(command.toLowerCase()){
 		case "logical":
 			System.out.println("logical");

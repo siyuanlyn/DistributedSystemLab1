@@ -11,9 +11,6 @@ public class Application {
 		return sequenceNumber++;
 	}
 
-
-		
-
 	public static void main(String[] args) throws IOException, InterruptedException{
 		MessagePasser messagePasser = new MessagePasser(args[0], args[1]);
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -73,6 +70,16 @@ public class Application {
 					System.out.println(receivedMessage.toString());
 					break;
 				case "retrievelog":
+					System.out.println("Do you want to log this event? Enter yes or no");
+					logIt = in.readLine();
+					while(!(logIt.equalsIgnoreCase("yes") || logIt.equalsIgnoreCase("no"))){
+						System.out.println("please enter \"yes\" or \"no\"\n"
+										 + "Do you want to log this event?");
+						logIt = in.readLine();
+					}
+					if(logIt.equalsIgnoreCase("yes")){
+						messagePasser.log = true;
+					}
 					messagePasser.retrieveLog();
 					break;
 				default:

@@ -21,22 +21,22 @@ import org.yaml.snakeyaml.Yaml;
 
 class LoggerMessagePasser extends MessagePasser{
 
-	
+
 	ArrayList<LogicalLog> logicalLogList = new ArrayList<LogicalLog>();
 	ArrayList<VectorLog> vectorLogList = new ArrayList<VectorLog>();
 	LogicalLogComparator logicalLogComparator = new LogicalLogComparator();
 	VectorLogComparator vectorLogComparator = new VectorLogComparator();
-	
+
 	public LoggerMessagePasser(String configuration_filename, String local_name) throws IOException {
 		super(configuration_filename, local_name);
 	}
-	
+
 	@Override
 	public void startListenerThread() throws IOException{
 		Thread loggerListenerThread = new LoggerListenerThread(this);
 		loggerListenerThread.start();
 	}
-	
+
 }
 
 public class MessagePasser {
@@ -57,14 +57,14 @@ public class MessagePasser {
 	long lastModifiedTime;
 	String configuration_filename;
 	String local_name;
-	
+
 	ClockService clockService = null;
 	ClockType clockType = null;
 	ProcessNo processNo = null;
 	int processCount = 0;
 	Function function = null;
 	boolean log = false;
-	
+
 	public void setClockService(ClockType clockType){
 		switch(clockType){
 		case LOGICAL:
@@ -79,7 +79,7 @@ public class MessagePasser {
 			System.err.println("SET CLOCK SERVICE ERROR. LOGGER SERVER MAY FAIL TO SET UP");
 		}
 	}
-	
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void parseConfigurationFile() throws IOException{
 		setProcessNo();
@@ -107,8 +107,8 @@ public class MessagePasser {
 		serverSocket = new ServerSocket(portNumber);
 		startListenerThread();
 	}
-	
-	
+
+
 	public void setProcessNo(){
 		switch(this.local_name.toLowerCase()){
 		case "alice":
@@ -128,28 +128,28 @@ public class MessagePasser {
 			break;
 		default:
 			System.err.println("Unknown Process!");
-			
+
 		}
 	}
-	
+
 	public void startListenerThread() throws IOException{
 		Thread listenerThread = new ListenerThread(this);
 		listenerThread.start();
 	}
-	
+
 	public MessagePasser(String configuration_filename, String local_name) throws IOException{
 		this.configuration_filename = configuration_filename;
 		this.local_name = local_name;
 		parseConfigurationFile();
 	}
-	
+
 	void reconfiguration() throws IOException{
 		if(configurationFile.lastModified() > lastModifiedTime){
 			lastModifiedTime = configurationFile.lastModified();
 			//System.out.println("INFO: " + "configuration file modified!!!");
 			nodeMap.clear();
 			//System.out.println("INFO: " + "nodeMap cleared! "+ nodeMap.toString());
-//			socketMap.clear();
+			//			socketMap.clear();
 			//System.out.println("INFO: " + "socketMap cleared! "+ socketMap.toString());
 			streamMap.clear();
 			//System.out.println("INFO: " + "streamMap cleared! "+ streamMap.toString());
@@ -206,7 +206,7 @@ public class MessagePasser {
 					((VectorClock)this.clockService).ticks();
 					System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 				}
-				
+
 			}
 			else{
 				System.err.println("NO RESPONSE FROM LOGGER");
@@ -214,7 +214,7 @@ public class MessagePasser {
 			}
 		}
 	}
-	
+
 	void send(Message message) throws UnknownHostException, IOException, InterruptedException{
 		reconfiguration();
 		this.function = Function.SEND;
@@ -226,14 +226,14 @@ public class MessagePasser {
 			((VectorClock)this.clockService).ticks();
 			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 		}
-		
+
 		try{
 			clockServiceInit();
 		} catch (SocketException e){
 			System.err.println("CANNOT CONNECT TO LOGGER");
 			return;
 		}
-		
+
 		//System.out.println("INFO: " + "sending..................");
 		message.set_action(checkSendingRules(message));
 		switch(message.action){
@@ -262,7 +262,7 @@ public class MessagePasser {
 
 	@SuppressWarnings("resource")
 	void sendMessage(Message message) throws IOException{
-		
+
 		if(!streamMap.containsKey(message.destination)){
 			System.out.println("INFO: " + "new socket: " + nodeMap.get(message.destination).ip + " " + nodeMap.get(message.destination).port);
 			if(!nodeMap.containsKey(message.destination)){
@@ -274,7 +274,7 @@ public class MessagePasser {
 				ObjectOutputStream oos = new ObjectOutputStream(destSocket.getOutputStream());
 				streamMap.put(message.destination, oos);
 				//System.out.println("INFO: " + "streamMap updated! " + streamMap.toString());
-				
+
 			} catch(IOException e){
 				System.err.println("Connection Fail!");
 				return;
@@ -292,13 +292,13 @@ public class MessagePasser {
 		else{
 			System.out.println("INFO: " + "Time stamped message will be sent!");
 			TimeStampedMessage tsm = new TimeStampedMessage(message.destination, message.kind, message.data, this.clockType);
-			
+
 			tsm.set_source(message.source);
 			tsm.set_action(message.action);
 			tsm.duplicate = message.duplicate;
 			tsm.sequenceNumber = message.sequenceNumber;
-			
-			
+
+
 			if(this.clockType == ClockType.LOGICAL){
 				tsm.setLogicalTimeStamps(((LogicalClock)this.clockService).internalLogicalClock);
 			}
@@ -320,28 +320,27 @@ public class MessagePasser {
 	}
 
 	Message receive() throws IOException, InterruptedException{
-		
+
 		reconfiguration();
 		this.function = Function.RECEIVE;
-		
-		
+
 		try{
 			clockServiceInit();
 		} catch (SocketException e){
 			System.err.println("CANNOT CONNECT TO LOGGER");
 		}
-		
+
 		receiveMessage();
 		if(!popReceivingQueue.isEmpty()){
 			Message popMessage = popReceivingQueue.poll();
-			
+
 			if(popMessage.getClass().equals(TimeStampedMessage.class)){
-				
+
 				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.LOGICAL){
 					int maxTimeStamp = Math.max(((LogicalClock)this.clockService).internalLogicalClock.timeStamp, ((TimeStampedMessage)popMessage).getLogicalTimeStamps().timeStamp);
 					((LogicalClock)this.clockService).internalLogicalClock.timeStamp = maxTimeStamp;
 				}
-				
+
 				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.VECTOR){
 					for(int i=0; i<this.processCount; i++){
 						if(i != this.processNo.value){
@@ -350,7 +349,7 @@ public class MessagePasser {
 					}
 				}
 			}
-			
+
 			if(this.clockType == ClockType.LOGICAL){
 				((LogicalClock)this.clockService).ticks();
 				System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
@@ -359,12 +358,12 @@ public class MessagePasser {
 				((VectorClock)this.clockService).ticks();
 				System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 			}
-			
+
 			if(this.log){
 				logEvent(popMessage, this.function);
 				this.log = false;
 			}
-			System.out.println(popMessage.data.toString());
+			//			System.out.println(popMessage.data.toString());
 			return popMessage;
 		}
 		else{
@@ -447,7 +446,7 @@ public class MessagePasser {
 			else if(((String)m.get("kind")).equalsIgnoreCase(message.kind)){
 				kindMatch = true;
 			}
-			
+
 			if(!m.containsKey("duplicate")){
 				duplicate = true;
 			}
@@ -500,7 +499,7 @@ public class MessagePasser {
 			else if(((String)m.get("kind")).equalsIgnoreCase(message.kind)){
 				kindMatch = true;
 			}
-			
+
 			if(!m.containsKey("duplicate")){
 				duplicate = true;
 			}
@@ -515,7 +514,7 @@ public class MessagePasser {
 		}
 		return "none";
 	}
-	
+
 	void logEvent(Message logMessage, Function event) throws IOException{
 		System.out.println("LOG THIS " + event);
 		TimeStampedMessage timeStampedLog = null;
@@ -539,7 +538,7 @@ public class MessagePasser {
 			System.out.println("INFO: This message cannot be logged!");
 		}
 	}
-	
+
 	void retrieveLog() throws IOException, InterruptedException{
 		reconfiguration();
 		//set up the request message with kind "retrieve"
@@ -554,7 +553,7 @@ public class MessagePasser {
 			((VectorClock)this.clockService).ticks();
 			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 		}
-		
+
 		try{
 			clockServiceInit();
 		} catch (SocketException e){
@@ -568,7 +567,50 @@ public class MessagePasser {
 		oos.reset();
 		System.out.println("INFO: wait logger for 1 sec");
 		Thread.sleep(1000);
-		receive();
+		//		receive();
+
+
+		receiveMessage();
+		if(!popReceivingQueue.isEmpty()){
+			Message popMessage = popReceivingQueue.poll();
+
+			//			if(popMessage.getClass().equals(TimeStampedMessage.class)){
+			//
+			//				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.LOGICAL){
+			//					int maxTimeStamp = Math.max(((LogicalClock)this.clockService).internalLogicalClock.timeStamp, ((TimeStampedMessage)popMessage).getLogicalTimeStamps().timeStamp);
+			//					((LogicalClock)this.clockService).internalLogicalClock.timeStamp = maxTimeStamp;
+			//				}
+			//
+			//				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.VECTOR){
+			//					for(int i=0; i<this.processCount; i++){
+			//						if(i != this.processNo.value){
+			//							((VectorClock)this.clockService).internalVectorClock.timeStampMatrix[i] = ((TimeStampedMessage)popMessage).getVectorTimeStamps().timeStampMatrix[i];
+			//						}
+			//					}
+			//				}
+			//			}
+
+			//			if(this.clockType == ClockType.LOGICAL){
+			//				((LogicalClock)this.clockService).ticks();
+			//				System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
+			//			}
+			//			if(this.clockType == ClockType.VECTOR){
+			//				((VectorClock)this.clockService).ticks();
+			//				System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
+			//			}
+
+			//			if(this.log){
+			//				logEvent(popMessage, this.function);
+			//				this.log = false;
+			//			}
+			System.out.println(popMessage.data.toString());
+
+
+			if(this.log){
+				logEvent(retrieve, this.function);
+				this.log = false;
+			}
+		}
 	}
 }
 
