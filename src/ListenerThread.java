@@ -2,9 +2,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-@SuppressWarnings("rawtypes")
 public class ListenerThread extends Thread{
 	ServerSocket serverSocket;
 	MessagePasser messagePasser;
