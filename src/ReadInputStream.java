@@ -26,6 +26,7 @@ public class ReadInputStream extends Thread{
 				//if the message is set clock from logger, set the clock and don't enqueue it
 				if(receivedMessage.kind.equals("set_clock") && receivedMessage.source.equals("logger")){
 					messagePasser.clockType = ((TimeStampedMessage)receivedMessage).getClockType();
+					messagePasser.setClockService(messagePasser.clockType);
 					System.out.println("INFO: " + "clock type set as " + messagePasser.clockType);
 					continue;
 				}

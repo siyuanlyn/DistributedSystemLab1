@@ -198,11 +198,11 @@ public class MessagePasser {
 				System.out.println("INFO: " + "clock type set as: " + this.clockType);
 				setClockService(this.clockType);
 				System.out.println("INFO: " + "clock service initialized");
-				if(this.clockType == ClockType.LOGICAL && (this.function == Function.SEND || this.function == Function.RETRIEVE)){
+				if(this.clockType == ClockType.LOGICAL && (this.function == Function.SEND)){
 					((LogicalClock)this.clockService).ticks();
 					System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
 				}
-				if(this.clockType == ClockType.VECTOR && (this.function == Function.SEND || this.function == Function.RETRIEVE)){
+				if(this.clockType == ClockType.VECTOR && (this.function == Function.SEND)){
 					((VectorClock)this.clockService).ticks();
 					System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 				}
@@ -545,6 +545,14 @@ public class MessagePasser {
 		TimeStampedMessage retrieve = new TimeStampedMessage("logger", "retrieve", null, null);
 		retrieve.set_source(this.local_name);
 		this.function = Function.RETRIEVE;
+		
+		try{
+			clockServiceInit();
+		} catch (SocketException e){
+			System.err.println("CANNOT CONNECT TO LOGGER");
+			return;
+		}
+		
 		if(this.clockType == ClockType.LOGICAL){
 			((LogicalClock)this.clockService).ticks();
 			System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
@@ -554,11 +562,11 @@ public class MessagePasser {
 			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 		}
 
-		try{
-			clockServiceInit();
-		} catch (SocketException e){
-			System.err.println("CANNOT CONNECT TO LOGGER");
-			return;
+		
+		//log first
+		if(this.log){
+			logEvent(retrieve, this.function);
+			this.log = false;
 		}
 		//send the request message to the logger
 		ObjectOutputStream oos = this.streamMap.get("logger");
@@ -568,48 +576,10 @@ public class MessagePasser {
 		System.out.println("INFO: wait logger for 1 sec");
 		Thread.sleep(1000);
 		//		receive();
-
-
 		receiveMessage();
 		if(!popReceivingQueue.isEmpty()){
 			Message popMessage = popReceivingQueue.poll();
-
-			//			if(popMessage.getClass().equals(TimeStampedMessage.class)){
-			//
-			//				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.LOGICAL){
-			//					int maxTimeStamp = Math.max(((LogicalClock)this.clockService).internalLogicalClock.timeStamp, ((TimeStampedMessage)popMessage).getLogicalTimeStamps().timeStamp);
-			//					((LogicalClock)this.clockService).internalLogicalClock.timeStamp = maxTimeStamp;
-			//				}
-			//
-			//				if(((TimeStampedMessage)popMessage).getClockType() == ClockType.VECTOR){
-			//					for(int i=0; i<this.processCount; i++){
-			//						if(i != this.processNo.value){
-			//							((VectorClock)this.clockService).internalVectorClock.timeStampMatrix[i] = ((TimeStampedMessage)popMessage).getVectorTimeStamps().timeStampMatrix[i];
-			//						}
-			//					}
-			//				}
-			//			}
-
-			//			if(this.clockType == ClockType.LOGICAL){
-			//				((LogicalClock)this.clockService).ticks();
-			//				System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
-			//			}
-			//			if(this.clockType == ClockType.VECTOR){
-			//				((VectorClock)this.clockService).ticks();
-			//				System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
-			//			}
-
-			//			if(this.log){
-			//				logEvent(popMessage, this.function);
-			//				this.log = false;
-			//			}
 			System.out.println(popMessage.data.toString());
-
-
-			if(this.log){
-				logEvent(retrieve, this.function);
-				this.log = false;
-			}
 		}
 	}
 }
