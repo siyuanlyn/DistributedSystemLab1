@@ -50,6 +50,7 @@ public class MessagePasser {
 	ConcurrentLinkedQueue<Message> delaySendingQueue = new ConcurrentLinkedQueue<Message>();
 	ConcurrentLinkedQueue<Message> popReceivingQueue = new ConcurrentLinkedQueue<Message>();
 	ConcurrentLinkedQueue<Message> delayReceivingQueue = new ConcurrentLinkedQueue<Message>();
+	ConcurrentLinkedQueue<TimeStampedMessage> logQueue = new ConcurrentLinkedQueue<TimeStampedMessage>();
 	ArrayList<LinkedHashMap<String, String>> configList;
 	ArrayList<LinkedHashMap<String, String>> sendRuleList;
 	ArrayList<LinkedHashMap<String, String>> receiveRuleList;
@@ -305,7 +306,6 @@ public class MessagePasser {
 			if(this.clockType == ClockType.VECTOR){
 				tsm.setVectorTimeStamps(((VectorClock)this.clockService).internalVectorClock);
 			}
-			System.out.println(tsm.data);
 			streamMap.get(message.destination).writeObject(tsm);
 			streamMap.get(message.destination).flush();
 			streamMap.get(message.destination).reset();
@@ -577,10 +577,10 @@ public class MessagePasser {
 		System.out.println("INFO: wait logger for 1 sec");
 		Thread.sleep(1000);
 		//		receive();
-		receiveMessage();
-		if(!popReceivingQueue.isEmpty()){
-			Message popMessage = popReceivingQueue.poll();
-			System.out.println(popMessage.data.toString());
+//		receiveMessage();
+		if(!logQueue.isEmpty()){
+			Message logMessage = logQueue.poll();
+			System.out.println(logMessage.data.toString());
 		}
 	}
 }

@@ -30,6 +30,11 @@ public class ReadInputStream extends Thread{
 					System.out.println("INFO: " + "clock type set as " + messagePasser.clockType);
 					continue;
 				}
+				//the log_reply message replying for nodes' log retrieve request
+				if(receivedMessage.kind.equalsIgnoreCase("log_reply") && receivedMessage.source.equals("logger")){
+					this.messagePasser.logQueue.offer((TimeStampedMessage)receivedMessage);
+					continue;
+				}
 				if(!messagePasser.streamMap.containsKey(receivedMessage.source)){
 					//add the stream in the stream map
 					System.out.println("INFO: " + "call back");
@@ -119,9 +124,28 @@ class LoggerReadInputStream extends Thread{
 						if(loggerMessagePasser.clockType == ClockType.LOGICAL){
 							synchronized(loggerMessagePasser.logicalLogList){
 								Collections.sort(loggerMessagePasser.logicalLogList, loggerMessagePasser.logicalLogComparator);
+//								if(loggerMessagePasser.logicalLogList.size() > 1 &&
+//										loggerMessagePasser.logicalLogList.get(0).compareTo(loggerMessagePasser.logicalLogList.get(1)) == 0){
+//									loggerMessagePasser.logicalLogList.get(0).concurrent = "{C} " ;
+//								}
+								for(int i=1; i<loggerMessagePasser.logicalLogList.size(); i++){
+									if(loggerMessagePasser.logicalLogList.get(i).compareTo(loggerMessagePasser.logicalLogList.get(i-1)) == 0){
+										loggerMessagePasser.logicalLogList.get(i).concurrent = "{C} " ;
+//										loggerMessagePasser.logicalLogList.get(i-1).concurrent = "{C} " ;
+									}
+//									if(loggerMessagePasser.logicalLogList.get(i).compareTo(loggerMessagePasser.logicalLogList.get(i+1)) == 0){
+//										loggerMessagePasser.logicalLogList.get(i).concurrent = "{C} " ;
+//										loggerMessagePasser.logicalLogList.get(i+1).concurrent = "{C} " ;
+//									}
+								}
+//								if(loggerMessagePasser.logicalLogList.size() > 1 &&
+//										loggerMessagePasser.logicalLogList.get(loggerMessagePasser.logicalLogList.size()-1).compareTo(loggerMessagePasser.logicalLogList.get(loggerMessagePasser.logicalLogList.size()-2)) == 0){
+//									loggerMessagePasser.logicalLogList.get(0).concurrent = "{C} " ;
+//								}
 								StringBuffer reply = new StringBuffer();
 								for(LogicalLog ll : loggerMessagePasser.logicalLogList){
-									reply.append("\n(" + ll.processName + "," + ll.timestamp + ") ");
+									reply.append("\n" + ll.concurrent);
+									reply.append("(" + ll.processName + "," + ll.timestamp + ") ");
 									reply.append(ll.event + "; ");
 									reply.append(ll.metadata.toString() + "; ");
 								}
@@ -136,9 +160,28 @@ class LoggerReadInputStream extends Thread{
 						if(loggerMessagePasser.clockType == ClockType.VECTOR){
 							synchronized(loggerMessagePasser.vectorLogList){
 								Collections.sort(loggerMessagePasser.vectorLogList, loggerMessagePasser.vectorLogComparator);
+//								if(loggerMessagePasser.vectorLogList.size() > 1 &&
+//										loggerMessagePasser.vectorLogList.get(0).compareTo(loggerMessagePasser.vectorLogList.get(1)) == 0){
+//									loggerMessagePasser.vectorLogList.get(0).concurrent = "{C} " ;
+//								}
+								for(int i=1; i<loggerMessagePasser.vectorLogList.size(); i++){
+									if(loggerMessagePasser.vectorLogList.get(i).compareTo(loggerMessagePasser.vectorLogList.get(i-1)) == 0){
+										loggerMessagePasser.vectorLogList.get(i).concurrent = "{C} " ;
+//										loggerMessagePasser.vectorLogList.get(i-1).concurrent = "{C} " ;
+									}
+//									if(loggerMessagePasser.vectorLogList.get(i).compareTo(loggerMessagePasser.vectorLogList.get(i+1)) == 0){
+//										loggerMessagePasser.vectorLogList.get(i).concurrent = "{C} " ;
+//										loggerMessagePasser.vectorLogList.get(i+1).concurrent = "{C} " ;
+//									}
+								}
+//								if(loggerMessagePasser.vectorLogList.size() > 1 &&
+//										loggerMessagePasser.vectorLogList.get(loggerMessagePasser.vectorLogList.size()-1).compareTo(loggerMessagePasser.vectorLogList.get(loggerMessagePasser.vectorLogList.size()-2)) == 0){
+//									loggerMessagePasser.vectorLogList.get(0).concurrent = "{C} " ;
+//								}
 								StringBuffer reply = new StringBuffer();
 								for(VectorLog vl : loggerMessagePasser.vectorLogList){
-									reply.append("\n" + Arrays.toString(vl.timestamp));
+									reply.append("\n" + vl.concurrent);
+									reply.append(Arrays.toString(vl.timestamp));
 									reply.append("; " + vl.event + "; ");
 									reply.append(vl.metadata.toString() + "; ");
 								}
