@@ -56,6 +56,7 @@ public class MessagePasser {
 	ClockType clockType = null;
 	ProcessNo processNo = null;
 	int processCount = 0;
+	Function function = null;
 	
 	public void setClockService(ClockType clockType){
 		switch(clockType){
@@ -189,6 +190,16 @@ public class MessagePasser {
 			if(this.clockType != null){
 				System.out.println("INFO: " + "clock type set as: " + this.clockType);
 				setClockService(this.clockType);
+				
+				if(this.clockType == ClockType.LOGICAL && this.function == Function.SEND){
+					((LogicalClock)this.clockService).ticks();
+					System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
+				}
+				if(this.clockType == ClockType.VECTOR && this.function == Function.SEND){
+					((VectorClock)this.clockService).ticks();
+					System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
+				}
+				
 			}
 			else{
 				System.err.println("NO RESPONSE FROM LOGGER");
@@ -199,6 +210,7 @@ public class MessagePasser {
 	
 	void send(Message message) throws UnknownHostException, IOException, InterruptedException{
 		reconfiguration();
+		this.function = Function.SEND;
 		if(this.clockType == ClockType.LOGICAL){
 			((LogicalClock)this.clockService).ticks();
 			System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
@@ -292,7 +304,7 @@ public class MessagePasser {
 	Message receive() throws IOException, InterruptedException{
 		
 		reconfiguration();
-		
+		this.function = Function.RECEIVE;
 		
 		
 		try{
@@ -504,6 +516,10 @@ enum ProcessNo{
 	private ProcessNo(int value){
 		this.value = value;
 	}
+}
+
+enum Function{
+	SEND,RECEIVE;
 }
 
 
