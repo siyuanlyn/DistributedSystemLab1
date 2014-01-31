@@ -144,7 +144,7 @@ public class MessagePasser {
 		parseConfigurationFile();
 	}
 
-	void reconfiguration() throws IOException{
+	void reconfiguration() throws IOException, InterruptedException{
 		if(configurationFile.lastModified() > lastModifiedTime){
 			lastModifiedTime = configurationFile.lastModified();
 			//System.out.println("INFO: " + "configuration file modified!!!");
@@ -165,6 +165,8 @@ public class MessagePasser {
 			//System.out.println("INFO: " + "nodeMap reparsed! "+ nodeMap.toString());
 			//System.out.println("INFO: " + "socketMap reparsed! "+ socketMap.toString());
 			//System.out.println("INFO: " + "streamMap reparsed! "+ streamMap.toString());
+			this.clockType = null;
+			clockServiceInit();
 		}
 	}
 
@@ -546,14 +548,14 @@ public class MessagePasser {
 		TimeStampedMessage retrieve = new TimeStampedMessage("logger", "retrieve", null, null);
 		retrieve.set_source(this.local_name);
 		this.function = Function.RETRIEVE;
-		
+
 		try{
 			clockServiceInit();
 		} catch (SocketException e){
 			System.err.println("CANNOT CONNECT TO LOGGER");
 			return;
 		}
-		
+
 		if(this.clockType == ClockType.LOGICAL){
 			((LogicalClock)this.clockService).ticks();
 			System.out.println("INFO: " + "logical time stamp now: " + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
@@ -562,7 +564,7 @@ public class MessagePasser {
 			((VectorClock)this.clockService).ticks();
 			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 		}
-		
+
 		//log first
 		if(this.log){
 			logEvent(retrieve, this.function);
@@ -576,13 +578,13 @@ public class MessagePasser {
 		System.out.println("INFO: wait logger for 1 sec");
 		Thread.sleep(1000);
 		//		receive();
-//		receiveMessage();
+		//		receiveMessage();
 		if(!logQueue.isEmpty()){
 			Message logMessage = logQueue.poll();
 			System.out.println(logMessage.data.toString());
 		}
 	}
-	
+
 	void printTimeStamp() throws IOException, InterruptedException{
 		this.function = Function.PRINTSTAMP;
 		TimeStampedMessage tsm = new TimeStampedMessage("logger", "printTimeStamp", null, null);
@@ -602,7 +604,7 @@ public class MessagePasser {
 			((VectorClock)this.clockService).ticks();
 			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 		}
-		
+
 		if(this.clockType == ClockType.LOGICAL){
 			System.out.println("Clock type: " + this.clockType + "; Time Stamp:" + ((LogicalClock)this.clockService).internalLogicalClock.timeStamp);
 			if(this.log){
@@ -620,7 +622,7 @@ public class MessagePasser {
 		else{
 			System.err.println("CLOCK TYPE IS NOT SET YET. CANNOT PRINT TIME STAMP");
 		}
-		
+
 	}
 }
 
@@ -635,6 +637,4 @@ enum ProcessNo{
 enum Function{
 	SEND,RECEIVE,RETRIEVE,PRINTSTAMP;
 }
-
-
 

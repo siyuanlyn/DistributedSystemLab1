@@ -73,7 +73,7 @@ class LoggerReadInputStream extends Thread{
 			try {
 				TimeStampedMessage receivedTimeStampedMessage = (TimeStampedMessage)ois.readObject();
 				System.out.println("INFO: " + "logger gets a timestamped message!");
-				if(!loggerMessagePasser.streamMap.containsKey(receivedTimeStampedMessage.source)){
+				if(!loggerMessagePasser.streamMap.containsKey(receivedTimeStampedMessage.source) || receivedTimeStampedMessage.kind.equalsIgnoreCase("clock_set_request")){
 					System.out.println("INFO: " + "logger call back");
 					Node callBackNode = loggerMessagePasser.nodeMap.get(receivedTimeStampedMessage.source);
 					Socket callBackSocket = new Socket(InetAddress.getByName(callBackNode.ip),callBackNode.port);

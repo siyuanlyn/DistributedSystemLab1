@@ -196,7 +196,27 @@ public class CentralizedLogger {
 		}
 		System.out.println("INFO: Logger time set done");
 		while(true){
-			
+			if(loggerMessagePasser.configurationFile.lastModified() > loggerMessagePasser.lastModifiedTime){
+				loggerMessagePasser.lastModifiedTime = loggerMessagePasser.configurationFile.lastModified();
+				System.out.println("INFO: " + "configuration file modified!!!");
+				loggerMessagePasser.nodeMap.clear();
+				//System.out.println("INFO: " + "nodeMap cleared! "+ nodeMap.toString());
+				//			socketMap.clear();
+				//System.out.println("INFO: " + "socketMap cleared! "+ socketMap.toString());
+				loggerMessagePasser.streamMap.clear();
+				//System.out.println("INFO: " + "streamMap cleared! "+ streamMap.toString());
+				loggerMessagePasser.configList.clear();
+				loggerMessagePasser.sendRuleList.clear();
+				loggerMessagePasser.receiveRuleList.clear();
+				//System.out.println("INFO: " + "config and rule list cleared!");
+				loggerMessagePasser.serverSocket.close();
+				//System.out.println("INFO: " + "reparsing new configuration file!");
+				loggerMessagePasser.parseConfigurationFile();
+				//System.out.println("INFO: " + "reparsing new configuration file done!");
+				//System.out.println("INFO: " + "nodeMap reparsed! "+ nodeMap.toString());
+				//System.out.println("INFO: " + "socketMap reparsed! "+ socketMap.toString());
+				//System.out.println("INFO: " + "streamMap reparsed! "+ streamMap.toString());
+			}
 		}
 	}
 }
