@@ -547,6 +547,8 @@ public class MessagePasser {
 		//set up the request message with kind "retrieve"
 		TimeStampedMessage retrieve = new TimeStampedMessage("logger", "retrieve", null, null);
 		retrieve.set_source(this.local_name);
+		
+		
 		this.function = Function.RETRIEVE;
 
 		try{
@@ -564,7 +566,13 @@ public class MessagePasser {
 			((VectorClock)this.clockService).ticks();
 			System.out.println("INFO: " + "vector time stamp now: " + Arrays.toString(((VectorClock)this.clockService).internalVectorClock.timeStampMatrix));
 		}
-
+		
+		if(this.clockType == ClockType.LOGICAL){
+			retrieve.setLogicalTimeStamps(((LogicalClock)this.clockService).internalLogicalClock);
+		}
+		if(this.clockType == ClockType.VECTOR){
+			retrieve.setVectorTimeStamps(((VectorClock)this.clockService).internalVectorClock);
+		}
 		//log first
 		if(this.log){
 			logEvent(retrieve, this.function);

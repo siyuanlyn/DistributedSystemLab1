@@ -3,18 +3,24 @@ import java.util.Arrays;
 
 public class Message implements Serializable{
 	private static final long serialVersionUID = 1L;
-	String source;
-	String destination;
-	String kind;
-	Object data;
-	int sequenceNumber;
-	String action;
+	String source = "***";
+	String destination = "***";
+	String kind = "***";
+	Object data = "***";
+	int sequenceNumber = -1;
+	String action = "***";
 	boolean duplicate = false;
 
 	public Message(String dest, String kind, Object data){
-		destination = dest;
-		this.kind = kind;
-		this.data = data;
+		if(dest != null){
+			destination = dest;
+		}
+		if(kind != null){
+			this.kind = kind;
+		}
+		if(data != null){
+			this.data = data;
+		}
 	}
 
 	public void set_source(String source){

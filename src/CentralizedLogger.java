@@ -45,7 +45,7 @@ class LogicalLogComparator implements Comparator<LogicalLog> {
 }
 
 class VectorLog implements Comparable<VectorLog>{
-	String concurrent = "    ";
+	String concurrent = "      ";
 	String processName;
 	String event;
 	Metadata metadata;
@@ -53,7 +53,9 @@ class VectorLog implements Comparable<VectorLog>{
 	public VectorLog(TimeStampedMessage vector_log){
 		this.processName = vector_log.source;
 		this.event = vector_log.kind.substring(3);
-		this.metadata = new Metadata((Message)vector_log.data);
+		if((vector_log.data).getClass().equals(TimeStampedMessage.class)){
+			this.metadata = new Metadata((Message)vector_log.data);
+		}
 		this.timestamp = ((TimeStampedMessage)vector_log).getVectorTimeStamps().timeStampMatrix;
 	}
 	@Override
