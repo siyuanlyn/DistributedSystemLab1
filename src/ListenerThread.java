@@ -41,7 +41,7 @@ class LoggerListenerThread extends Thread{
 		while(true){
 			try {
 				Socket client = serverSocket.accept();
-				System.out.println("INFO: " + "logger accepted: " + client.toString());
+				//System.out.println("INFO: " + "logger accepted: " + client.toString());
 				Thread loggerReadInputStream = new LoggerReadInputStream(client, loggerMessagePasser);
 				loggerReadInputStream.start();
 			} catch (SocketException e){
