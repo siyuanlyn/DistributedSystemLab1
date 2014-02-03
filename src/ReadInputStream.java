@@ -125,76 +125,7 @@ class LoggerReadInputStream extends Thread {
 				} else {
 					// if it's a retrieve log request
 					if (receivedTimeStampedMessage.kind.equalsIgnoreCase("retrieve")) {
-						// if (loggerMessagePasser.clockType == ClockType.LOGICAL) {
-						// LogicalTimeStamps lts =
-						// receivedTimeStampedMessage.getLogicalTimeStamps();
-						// synchronized (loggerMessagePasser.logicalLogList) {
-						// for (int i = 0; i < loggerMessagePasser.logicalLogList.size(); i++) {
-						// // if the same process and different time stamp, HB.
-						//
-						// if (loggerMessagePasser.logicalLogList.get(i).timestamp < lts.timeStamp
-						// &&
-						// loggerMessagePasser.logicalLogList.get(i).processName.equals(receivedTimeStampedMessage.source))
-						// {
-						// loggerMessagePasser.logicalLogList.get(i).concurrent = "{HBf} ";
-						// } else if (loggerMessagePasser.logicalLogList.get(i).timestamp ==
-						// lts.timeStamp &&
-						// loggerMessagePasser.logicalLogList.get(i).processName.equals(receivedTimeStampedMessage.source))
-						// {
-						// loggerMessagePasser.logicalLogList.get(i).concurrent = "{Cur} ";
-						// } else {
-						// loggerMessagePasser.logicalLogList.get(i).concurrent = "{XXX} ";
-						// }
-						//
-						// }
-						// StringBuffer reply = new StringBuffer();
-						// for (LogicalLog ll : loggerMessagePasser.logicalLogList) {
-						// reply.append("\n" + ll.concurrent);
-						// reply.append("(" + ll.processName + "," + ll.timestamp + ") ");
-						// reply.append(ll.event + "; ");
-						// reply.append(ll.metadata.toString() + "; ");
-						// }
-						// TimeStampedMessage logReply = new
-						// TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply",
-						// reply.toString(), null);
-						// logReply.set_source("logger");
-						// ObjectOutputStream oos =
-						// loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
-						// oos.writeObject(logReply);
-						// oos.flush();
-						// oos.reset();
-						// }
-						// }
-						// if (loggerMessagePasser.clockType == ClockType.VECTOR) {
-						// synchronized (loggerMessagePasser.vectorLogList) {
-						// VectorLog vtl = new VectorLog(receivedTimeStampedMessage);
-						// for (int i = 1; i < loggerMessagePasser.vectorLogList.size(); i++) {
-						// if (loggerMessagePasser.vectorLogList.get(i).compareTo(vtl) == 0) {
-						// loggerMessagePasser.vectorLogList.get(i).concurrent = "{Ccr} ";
-						// } else if (loggerMessagePasser.vectorLogList.get(i).compareTo(vtl) < 0) {
-						// loggerMessagePasser.vectorLogList.get(i).concurrent = "{HBf} ";
-						// } else {
-						// loggerMessagePasser.vectorLogList.get(i).concurrent = "{HAf} ";
-						// }
-						// }
-						// StringBuffer reply = new StringBuffer();
-						// for (VectorLog vl : loggerMessagePasser.vectorLogList) {
-						// reply.append("\n" + vl.concurrent);
-						// reply.append(Arrays.toString(vl.timestamp));
-						// reply.append("; " + vl.event + "; ");
-						// reply.append(vl.metadata.toString() + "; ");
-						// }
-						// TimeStampedMessage logReply = new
-						// TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply",
-						// reply.toString(), null);
-						// logReply.set_source("logger");
-						// ObjectOutputStream oos =
-						// loggerMessagePasser.streamMap.get(receivedTimeStampedMessage.source);
-						// oos.writeObject(logReply);
-						// oos.flush();
-						// oos.reset();
-						// }
-						// }
+						
 						String reply = loggerMessagePasser.print();
 						TimeStampedMessage logReply = new TimeStampedMessage(receivedTimeStampedMessage.source, "log_reply", reply.toString(), null);
 						logReply.set_source("logger");

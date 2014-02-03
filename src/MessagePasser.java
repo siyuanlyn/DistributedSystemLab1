@@ -59,13 +59,24 @@ class LoggerMessagePasser extends MessagePasser {
 
 					if (list.size() > 0) {
 						Collections.sort(list);
-						String split = "===========================================================================\n";
+						StringBuilder splitsb = new StringBuilder();
+						for (int j = 0; j < list.get(0).metadata.toString().length(); j++)
+							splitsb.append("=");
+						splitsb.append("\n");
+
+						String split = splitsb.toString();
 						sb.append(split);
-						for (int i = 0; i < split.length() / 2; i++)
+						String nodeTitle = "Node " + list.get(0).processName + "\n";
+						for (int i = 0; i <= (split.length() - nodeTitle.length()) / 2; i++)
 							sb.append(" ");
-						sb.append("Node " + list.get(0).processName + "\n");
-						for (LogicalLog ll : list) {
-							sb.append(ll.toString() + "\n");
+						sb.append(nodeTitle);
+						for (int i = 0; i < list.size(); i++) {
+							sb.append(list.get(i).toString() + "\n");
+							if (i != list.size() - 1) {
+								for (int j = 0; j <= split.length() / 2; j++)
+									sb.append(" ");
+								sb.append("\u2193\n");
+							}
 						}
 						sb.append(split);
 					}
@@ -75,6 +86,8 @@ class LoggerMessagePasser extends MessagePasser {
 			return sb.toString();
 		} else {
 			int padSize = 0;
+			HashMap<Integer, ArrayList<Integer>> hbs = new HashMap<Integer, ArrayList<Integer>>();
+			HashMap<Integer, ArrayList<Integer>> cons = new HashMap<Integer, ArrayList<Integer>>();
 			synchronized (vectorLogList) {
 				for (int i = 0; i < vectorLogList.size(); i++) {
 					VectorLog vl = vectorLogList.get(i);
@@ -101,6 +114,10 @@ class LoggerMessagePasser extends MessagePasser {
 								con.add(j + 1);
 						}
 					}
+					if (hb.size() > 0)
+						hbs.put(i + 1, hb);
+					if (con.size() > 0)
+						cons.put(i + 1, con);
 					for (int num : hb) {
 						sb.append(num + " ");
 					}
@@ -113,8 +130,105 @@ class LoggerMessagePasser extends MessagePasser {
 				}
 
 			}
+			HashMap<Integer, ArrayList<ArrayList<Integer>>> hbLines = new HashMap<Integer, ArrayList<ArrayList<Integer>>>();
+
+			for (int logNum : hbs.keySet()) {
+				ArrayList<Integer> hb = hbs.get(logNum);
+				ArrayList<ArrayList<Integer>> hbline = new ArrayList<ArrayList<Integer>>();
+				ArrayList<Integer> result = new ArrayList<Integer>();
+				result.add(logNum);
+				hbline.add(result);
+				for (int i = 0; i < hb.size(); i++) {
+					int node = hb.get(i);
+					for (int k = 0; k < hbline.size(); k++) {
+						ArrayList<Integer> line = hbline.get(k);
+						if (isExisted(line, node))
+							continue;
+						int index = findIndex(line, node);
+						System.out.println(Arrays.toString(line.toArray()) + " index: " + index);
+
+						if (index >= 0) {
+							line.add(index, node);
+							hbline.set(k, line);
+						} else {
+							index = Math.abs(index);
+							boolean flag = false;
+							for (int n : hb) {
+								if (isBetween(line.get(index - 1), node, n)) {
+									flag = true;
+									break;
+								}
+							}
+							if (!flag) {
+								ArrayList<Integer> newLine = new ArrayList<Integer>();
+								for (int j = 0; j < index; j++) {
+									newLine.add(line.get(j));
+								}
+								newLine.add(node);
+								hbline.add(newLine);
+							}
+						}
+					}
+				}
+				if (hbline.size() > 0)
+					hbLines.put(logNum, hbline);
+			}
+			sb.append("Happen before lines: \n");
+			for (int start : hbLines.keySet()) {
+				ArrayList<ArrayList<Integer>> hbLine = hbLines.get(start);
+				for (ArrayList<Integer> line : hbLine) {
+					for (int i = 0; i < line.size(); i++) {
+						sb.append(line.get(i));
+						if (i != line.size() - 1) {
+							sb.append("\u2192");
+						}
+					}
+					sb.append("\n");
+				}
+			}
 			return sb.toString();
 		}
+	}
+
+	private boolean isExisted(ArrayList<Integer> result, int log) {
+		for (int a : result) {
+			if (a == log)
+				return true;
+		}
+		return false;
+	}
+
+	private boolean isBetween(int start, int end, int log) {
+		VectorLog startvl = vectorLogList.get(start - 1);
+		VectorLog endvl = vectorLogList.get(end - 1);
+		VectorLog logvl = vectorLogList.get(log - 1);
+		if (startvl.compareTo(logvl) == -1 && logvl.compareTo(endvl) == -1)
+			return true;
+		return false;
+
+	}
+
+	private int findIndex(ArrayList<Integer> result, int log) {
+		VectorLog newvl = vectorLogList.get(log - 1);
+
+		for (int i = 0; i < result.size(); i++) {
+			VectorLog old = vectorLogList.get(result.get(i) - 1);
+			// if new happen after old, should at least insert after this, for loop do it for us
+
+			// new happen before old, since this list should be maintained as sorted, this old
+			// index is the place to insert
+			if (newvl.compareTo(old) < 0) {
+				return i;
+			} else if (newvl.compareTo(old) == 0) {
+				// if new is concurrent with old, then we need to start a new list, return -1 * i to
+				// indicate that new should start a new line with all nodes before i.
+				// since the result always has the the head of the line, so i would always > 0.
+				return -1 * i;
+			}
+		}
+		// if we go through the whole list, it means we need to add it to the end of the list
+		return result.size();
+
 	}
 }
 
