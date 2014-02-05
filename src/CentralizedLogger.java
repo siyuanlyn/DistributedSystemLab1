@@ -37,8 +37,8 @@ class LogicalLog implements Comparable<LogicalLog> {
 
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("TimeStamp: " + timestamp + "; processName: " + processName + " ; Event: " + event + "\n");
-		sb.append(metadata.toString());
+		sb.append("TimeStamp: " + timestamp + "; processName: " + processName + " ; Event: " + event);
+		//sb.append(metadata.toString());
 		return sb.toString();
 	}
 }

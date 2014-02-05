@@ -71,7 +71,26 @@ class LoggerMessagePasser extends MessagePasser {
 							sb.append(" ");
 						sb.append(nodeTitle);
 						for (int i = 0; i < list.size(); i++) {
-							sb.append(list.get(i).toString() + "\n");
+							sb.append(list.get(i).toString() + " ");
+							LogicalLog ll = list.get(i);
+									
+							if(ll.event.equalsIgnoreCase(Function.SEND.toString())){
+								int index = ProcessNo.valueOf(ll.metadata.msgDst.toUpperCase()).ordinal();
+								System.out.println("INFO: dest index" + index);
+								ArrayList<LogicalLog> destList = logs.get(index);
+								for(LogicalLog destLog : destList){
+									if(destLog.event.equalsIgnoreCase(Function.RECEIVE.toString()) && destLog.metadata.msgSrc.equalsIgnoreCase(ll.metadata.msgSrc)
+											&& destLog.metadata.msgSeqNo == ll.metadata.msgSeqNo){
+										System.out.println("INFO: find receive");
+										sb.append("\u2192");
+										sb.append(" " + destLog.processName+" ("+destLog.timestamp+")");
+										break;
+									}
+										
+								}
+							}
+							sb.append("\n"+ll.metadata.toString()+"\n");
+							// print arrow
 							if (i != list.size() - 1) {
 								for (int j = 0; j <= split.length() / 2; j++)
 									sb.append(" ");
@@ -145,7 +164,6 @@ class LoggerMessagePasser extends MessagePasser {
 						if (isExisted(line, node))
 							continue;
 						int index = findIndex(line, node);
-						System.out.println(Arrays.toString(line.toArray()) + " index: " + index);
 
 						if (index >= 0) {
 							line.add(index, node);

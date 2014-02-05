@@ -145,8 +145,8 @@ class LoggerReadInputStream extends Thread {
 				e.printStackTrace();
 			}
 			catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.err.println("Remote socket down.");
+				break;
 			}
 
 		}
