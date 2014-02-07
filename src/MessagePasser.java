@@ -315,9 +315,9 @@ public class MessagePasser {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void parseConfigurationFile() throws IOException {
 		setProcessNo();
-		configurationFile = new File("/Users/zdl/Dropbox18842/Dropbox/" + configuration_filename);
+		configurationFile = new File("D:\\Dropbox\\" + configuration_filename);
 		lastModifiedTime = configurationFile.lastModified();
-		InputStream input = new FileInputStream("/Users/zdl/Dropbox18842/Dropbox/" + configuration_filename);
+		InputStream input = new FileInputStream("D:\\Dropbox\\" + configuration_filename);
 		Yaml yaml = new Yaml();
 		Object data = yaml.load(input);
 		input.close();
